@@ -1500,8 +1500,8 @@ local function standardizeSkin(object)
     object.eyeliners_op = nil
 
     standard.overlays.eyeshadow = object.shadows_t and {
-      id = 0,
-      sheetGrid = decrease(object.shadows_t),
+      id = object.shadows_t,
+      sheetGrid = 0,
       palette = object.shadows_id,
       tint0 = object.shadows_c1,
       opacity = convertToPercent(object.shadows_op)
@@ -1512,15 +1512,15 @@ local function standardizeSkin(object)
     object.shadows_op = nil
 
     standard.overlays.freckles = object.freckles_t and {
-      id = decrease(object.freckles_t),
+      id = object.freckles_t,
       opacity = convertToPercent(object.freckles_op)
     }
     object.freckles_t = nil
     object.freckles_op = nil
 
     standard.overlays.lipstick = object.lipsticks_t and {
-      id = 0,
-      sheetGrid = decrease(object.lipsticks_t),
+      id = object.lipsticks_t,
+      sheetGrid = 0,
       palette = object.lipsticks_id,
       tint0 = object.lipsticks_c1,
       tint1 = object.lipsticks_c2,
@@ -1533,21 +1533,21 @@ local function standardizeSkin(object)
     object.lipsticks_op = nil
 
     standard.overlays.moles = object.moles_t and {
-      id = decrease(object.moles_t),
+      id = object.moles_t,
       opacity = convertToPercent(object.moles_op)
     }
     object.moles_t = nil
     object.moles_op = nil
 
     standard.overlays.scar = object.scars_t and {
-      id = decrease(object.scars_t),
+      id = object.scars_t,
       opacity = convertToPercent(object.scars_op)
     }
     object.scars_t = nil
     object.scars_op = nil
 
     standard.overlays.spots = object.spots_t and {
-      id = decrease(object.spots_t),
+      id = object.spots_t,
       opacity = convertToPercent(object.spots_op)
     }
     object.spots_t = nil
@@ -1577,6 +1577,7 @@ local function standardizeSkin(object)
     standard.headIndex = heads[standard.model][math.ceil(head / 6)] or math.ceil(head / 6)
     standard.skinTone = skin_tone[table.extract(object, "skin_tone")]
     standard.teethIndex = table.extract(object, "teeth")
+    standard.teethHash = (standard.teethIndex and type(standard.teethIndex) == "string") and GetHashKey(standard.teethIndex) or nil
     standard.hair = table.extract(object, "hair")
     if standard.model == "mp_male" then
       standard.beards_complete = table.extract(object, "beard")
@@ -1652,7 +1653,7 @@ local function standardizeSkin(object)
 
     standard.overlays = {}
     standard.overlays.ageing = object.ageing_t and {
-      id = decrease(object.ageing_t),
+      id = object.ageing_t,
       opacity = convertToPercent(object.ageing_op)
     }
     object.ageing_t = nil
@@ -1666,7 +1667,7 @@ local function standardizeSkin(object)
     object.beardstabble_op = nil
 
     standard.overlays.blush = object.blush_t and {
-      id = decrease(object.blush_t),
+      id = object.blush_t,
       palette = object.blush_id,
       tint0 = object.blush_c1,
       opacity = convertToPercent(object.blush_op)
@@ -1675,10 +1676,9 @@ local function standardizeSkin(object)
     object.blush_id = nil
     object.blush_c1 = nil
     object.blush_op = nil
-    
 
     standard.overlays.eyebrow = object.eyebrows_t and (function()
-      local id = decrease(object.eyebrows_t)
+      local id = object.eyebrows_t
       local sexe = "m"
       if id > 15 then
         id = id - 15
@@ -1699,7 +1699,7 @@ local function standardizeSkin(object)
 
     standard.overlays.eyeliner = object.eyeliners_t and {
       id = 0,
-      sheetGrid = decrease(object.eyeliners_t),
+      sheetGrid = object.eyeliners_t,
       palette = object.eyeliners_id,
       tint0 = object.eyeliners_c1,
       opacity = convertToPercent(object.eyeliners_op)
@@ -1711,7 +1711,7 @@ local function standardizeSkin(object)
 
     standard.overlays.eyeshadow = object.shadows_t and {
       id = 0,
-      sheetGrid = decrease(object.shadows_t),
+      sheetGrid = object.shadows_t,
       palette = object.shadows_id,
       tint0 = object.shadows_c1,
       opacity = convertToPercent(object.shadows_op)
@@ -1722,7 +1722,7 @@ local function standardizeSkin(object)
     object.shadows_op = nil
 
     standard.overlays.freckles = object.freckles_t and {
-      id = decrease(object.freckles_t),
+      id = object.freckles_t,
       opacity = convertToPercent(object.freckles_op)
     }
     object.freckles_t = nil
@@ -1743,21 +1743,21 @@ local function standardizeSkin(object)
     object.lipsticks_op = nil
 
     standard.overlays.moles = object.moles_t and {
-      id = decrease(object.moles_t),
+      id = object.moles_t,
       opacity = convertToPercent(object.moles_op)
     }
     object.moles_t = nil
     object.moles_op = nil
 
     standard.overlays.scar = object.scars_t and {
-      id = decrease(object.scars_t),
+      id = object.scars_t,
       opacity = convertToPercent(object.scars_op)
     }
     object.scars_t = nil
     object.scars_op = nil
 
     standard.overlays.spots = object.spots_t and {
-      id = decrease(object.spots_t),
+      id = object.spots_t,
       opacity = convertToPercent(object.spots_op)
     }
     object.spots_t = nil
@@ -1800,15 +1800,46 @@ local function standardizeSkin(object)
   clearOverlaysTable(standard.overlays)
 
   if standard.hair and type(standard.hair) ~= "table" then
-    standard.hair = {
+    standard.hair = { -- standardize hair table
       hash = standard.hair
     }
+    if standard.hair.model ~= nil and tonumber(standard.hair.model) > 0 then -- redemrp/reboot/rsg catch, or any other framework that saves hair/beards like this
+      local model = tonumber(standard.hair.model)
+      local texture = tonumber(standard.hair.texture)
+
+      if standard.model == "mp_male" then
+        if hairs_list["male"]["hair"][model] and hairs_list["male"]["hair"][model][texture] then -- compare against the list
+          standard.hair.hash = hairs_list["male"]["hair"][model] and hairs_list["male"]["hair"][model][texture].hash -- set the hash from the list
+        end
+      else
+        if hairs_list["female"]["hair"][model] and hairs_list["female"]["hair"][model][texture] then
+          standard.hair.hash = hairs_list["female"]["hair"][model][texture].hash
+        end
+      end
+    end
   end
+
   if standard.beards_complete and type(standard.beards_complete) ~= "table" then
     standard.beards_complete = {
       hash = standard.beards_complete
     }
+    if standard.beards_complete.model ~= nil and tonumber(standard.beards_complete.model) > 0 then
+      local model = tonumber(standard.beards_complete.model)
+      local texture = tonumber(standard.beards_complete.texture)
+      if hairs_list["male"]["beard"][model] and hairs_list["male"]["beard"][model][texture] then
+        standard.beards_complete.hash = hairs_list["male"]["beard"][model][texture].hash
+      end    
+    end
   end
+
+  -- if standard.teethIndex == nil then -- rsg/redem/reboot, if there's no teethIndex established, populate one as default.
+  --   standard.teethIndex = 0
+  -- end
+
+  -- if #tostring(math.abs(standard.teethIndex)) > 1 then -- convert to a string, then count the # of characters. If there's more than 1 character, teethIndex was originally saved as a hash & should be updated as such.
+  --   standard.teethHash = standard.teethIndex
+  --   standard.teethIndex = nil
+  -- end
 
   if jo.debug then
     oprint("Standardized skin")
@@ -1875,7 +1906,6 @@ local function revertSkin(standard)
     reverted.Body = table.extract(standard, "bodyType")
     reverted.Waist = table.extract(standard, "bodyWeight")
     reverted.Scale = table.extract(standard, "bodyScale")
-
     reverted.ArmsS = table.extract(standard.expressions, "arms")
     reverted.CalvesS = table.extract(standard.expressions, "calves")
     reverted.CheekBonesD = table.extract(standard.expressions, "cheekbonesDepth")
@@ -2792,7 +2822,7 @@ function FrameworkClass:updateUserSkin(...)
   end
   local skin = revertSkin(_skin)
   if OWFramework.updateUserSkin then
-    return OWFramework.updateUserSkin(source, skin)
+    return OWFramework.updateUserSkin(source, skin, overwrite)
   end
   if self:is("VORP") then
     if overwrite then
