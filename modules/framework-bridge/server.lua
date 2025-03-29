@@ -1000,6 +1000,15 @@ local function findValueInList(list, strandardValue)
   return value, key
 end
 
+local function getTeethFromIndex(ped, index)
+  local ped = ped or PlayerPedId()
+  local sex = "M"
+  if type(ped) == "string" then
+    sex = ped == "mp_male" and "M" or "F"
+  end
+  return ("CLOTHING_ITEM_%s_TEETH_%03d"):format(sex, index or 1)
+end
+
 --- A function to standardize the category name
 ---@param category string the category name
 local function standardizeSkinKey(category)
@@ -1574,10 +1583,9 @@ local function standardizeSkin(object)
     standard.eyesIndex = table.extract(object, "eyes_color")
     local head = object.head or 1
     object.head = nil
-    standard.headIndex = heads[standard.model][math.ceil(head / 6)] or math.ceil(head / 6)
+    standard.headIndex = math.ceil(head / 6)
     standard.skinTone = skin_tone[table.extract(object, "skin_tone")]
     standard.teethIndex = table.extract(object, "teeth")
-    standard.teethHash = (standard.teethIndex and type(standard.teethIndex) == "string") and GetHashKey(standard.teethIndex) or nil
     standard.hair = table.extract(object, "hair")
     if standard.model == "mp_male" then
       standard.beards_complete = table.extract(object, "beard")
@@ -1711,7 +1719,7 @@ local function standardizeSkin(object)
 
     standard.overlays.eyeshadow = object.shadows_t and {
       id = 0,
-      sheetGrid = object.shadows_t,
+      sheetGrid = decrease(object.shadows_t),
       palette = object.shadows_id,
       tint0 = object.shadows_c1,
       opacity = convertToPercent(object.shadows_op)
@@ -1832,14 +1840,14 @@ local function standardizeSkin(object)
     end
   end
 
-  -- if standard.teethIndex == nil then -- rsg/redem/reboot, if there's no teethIndex established, populate one as default.
-  --   standard.teethIndex = 0
-  -- end
+  if standard.teethIndex == nil then -- rsg/redem/reboot, if there's no teethIndex established, populate one as default.
+    standard.teethIndex = 0
+  end
 
-  -- if #tostring(math.abs(standard.teethIndex)) > 1 then -- convert to a string, then count the # of characters. If there's more than 1 character, teethIndex was originally saved as a hash & should be updated as such.
-  --   standard.teethHash = standard.teethIndex
-  --   standard.teethIndex = nil
-  -- end
+  if #tostring(math.abs(standard.teethIndex)) > 1 then -- convert to a string, then count the # of characters. If there's more than 1 character, teethIndex was originally saved as a hash & should be updated as such.
+    standard.teethHash = standard.teethIndex
+    standard.teethIndex = nil
+  end
 
   if jo.debug then
     oprint("Standardized skin")
@@ -2367,6 +2375,24 @@ local function revertSkin(standard)
       mp_female = { [17] = 20, [18] = 22, [19] = 27, [20] = 28 }
     }
     local bodies = { 2, 1, 3, 4, 5, 6 }
+    local teeths = {
+      mp_male = {
+        [1629650936] = 1,
+        [101272007] = 2,
+        [1015527107] = 3,
+        [-509378308] = 4,
+        [402451886] = 5,
+        [-517996555] = 6,
+      },
+      mp_female = {
+        [1255518018] = 1,
+        [1420215012] = 2,
+        [1718707833] = 3,
+        [-176356206] = 4,
+        [550263600] = 5,
+        [841743855] = 6,
+      }
+    }
 
     reverted.sex = standard.model == "mp_female" and 2 or 1
     _, reverted.body_size = table.find(bodies, function(value) return value == standard.bodiesIndex end)
@@ -2377,7 +2403,9 @@ local function revertSkin(standard)
     standard.headIndex = nil
     _, reverted.skin_tone = table.find(skin_tone, function(value, i) return value == standard.skinTone end)
     standard.skinTone = nil
-    reverted.teeth = table.extract(standard, "teethIndex")
+    _, reverted.teeth = table.find(teeths[standard.model], function(_, value) return value == standard.teeth end)
+    reverted.teeth = teeths[standard.model][reverted.teeth] or 0
+    standard.teethIndex = nil
     reverted.hair = table.extract(standard, "hair")
     if standard.model == "mp_male" then
       reverted.beard = table.extract(standard, "beards_complete")
@@ -2562,7 +2590,7 @@ local function revertSkin(standard)
       standard.expressions = nil
     end
 
-    if Config and Config.debug then
+    if jo.debug then
       if table.count(standard) > 0 then
         eprint("Skin keys not reverted")
         for key, value in pairs(standard) do

@@ -720,7 +720,7 @@ function jo.component.applySkin(ped, skin)
     end
   end
   if jo.isModuleLoaded("pedTexture") then
-    jo.pedTexture.overwriteCategory(ped, "heads", skin.overlays, true)
+      jo.pedTexture.overwriteCategory(ped, "heads", skin.overlays, true)
   end
 
   Wait(100)
@@ -1006,7 +1006,7 @@ function jo.component.getTeethFromIndex(ped, index)
   local ped = ped or PlayerPedId()
   local sex = "M"
   if type(ped) == "string" then
-    sex = "mp_male" and "M" or "F"
+    sex = ped == "mp_male" and "M" or "F"
   else
     sex = IsPedMale(ped) and "M" or "F"
   end

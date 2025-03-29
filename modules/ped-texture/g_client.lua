@@ -508,24 +508,35 @@ function jo.pedTexture.refreshAll(ped)
   end
 end
 
+local function waitReadyPed(ped)
+  Wait(30)
+  local isReady = jo.waiter.exec(function() return IsPedReadyToRender(ped) end)
+  if not isReady then
+    if jo.debug then eprint("This ped is not loaded:", ped) end
+    return
+  end
+end
+
 function jo.pedTexture.overwriteCategory(ped, category, overlays, forceRemove)
-  forceRemove = forceRemove or false
-  pedsTextures[ped] = pedsTextures[ped] or Entity(ped).state["jo_pedTexture"] or { [category] = {} }
-  if pedsTextures[ped][category] or forceRemove then
-    if pedsTextures[ped][category] then
-      pedsTextures[ped][category].layers = {}
-    end
-    for layername, cat in pairs(jo.pedTexture.categories) do
-      if cat == category then
-        jo.pedTexture.remove(ped, layername)
-        break
+  delays["overwriteCategory"..ped] = jo.timeout.delay("jo_libs:component:overwriteCategory" .. ped, function() waitReadyPed(ped) end, function()
+    forceRemove = forceRemove or false
+    pedsTextures[ped] = pedsTextures[ped] or Entity(ped).state["jo_pedTexture"] or { [category] = {} }
+    if pedsTextures[ped][category] or forceRemove then
+      if pedsTextures[ped][category] then
+        pedsTextures[ped][category].layers = {}
+      end
+      for layername, cat in pairs(jo.pedTexture.categories) do
+        if cat == category then
+          jo.pedTexture.remove(ped, layername)
+          break
+        end
       end
     end
-  end
-
-  for layername, layer in pairs(overlays or {}) do
-    jo.pedTexture.apply(ped, layername, layer)
-  end
+  
+    for layername, layer in pairs(overlays or {}) do
+      jo.pedTexture.apply(ped, layername, layer)
+    end
+  end)
 end
 
 function jo.pedTexture.getAll(ped)
