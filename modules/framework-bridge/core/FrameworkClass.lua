@@ -376,6 +376,8 @@ function jo.framework:standardizeClothesInternal(clothes)
   standard.hair_accessories = table.extract(clothes, "hair_accessories")
   standard.dresses = table.extract(clothes, "dresses")
   standard.armor = table.extract(clothes, "armor")
+  standard.masks_large = table.extract(clothes, "masks_large")
+  standard.gunbelt_accs = table.extract(clothes, "gunbelt_accs")
 
   return standard
 end
@@ -425,6 +427,8 @@ function jo.framework:revertClothesInternal(standard)
   clothes.hair_accessories = table.extract(standard, "hair_accessories")
   clothes.dresses = table.extract(standard, "dresses")
   clothes.armor = table.extract(standard, "armor")
+  clothes.masks_large = table.extract(standard, "masks_large")
+  clothes.gunbelt_accs = table.extract(standard, "gunbelt_accs")
 
   return clothes
 end
