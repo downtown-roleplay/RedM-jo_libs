@@ -442,10 +442,12 @@ function jo.framework:standardizeSkinInternal(skin)
 
   standard.model = table.extract(skin, "sex") == 2 and "mp_female" or "mp_male"
   standard.bodiesIndex = GetValue(fromFrameworkToStandard.bodies[skin.body_size], skin.body_size)
+  standard.bodyType = standard.bodiesIndex
   skin.body_size = nil
   standard.eyesIndex = table.extract(skin, "eyes_color")
   local head = GetValue(skin.head, 1)
   skin.head = nil
+  skin.teeth = 0
   standard.headIndex = math.ceil(head / 6)
   standard.skinTone = fromFrameworkToStandard.skin_tone[table.extract(skin, "skin_tone")]
   standard.teethHash = skin.teethHash
@@ -742,6 +744,7 @@ function jo.framework:revertSkinInternal(standard)
   
   reverted.teethHash = table.extract(standard, "teeth")
   reverted.teethIndex = fromFrameworkToStandard.teeths[standard.model][reverted.teethHash]
+
   
   reverted.hair = table.extract(standard, "hair")
   if standard.model == "mp_male" then
@@ -749,6 +752,7 @@ function jo.framework:revertSkinInternal(standard)
   end
   reverted.height = revertPercent(table.extract(standard, "bodyScale"))
   reverted.body_waist = table.extract(standard, "bodyWeight")
+  reverted.body_size = table.extract(standard, "bodyType")
   standard.model = nil
 
   reverted.arms_size = revertPercent(table.extract(standard.expressions, "arms"))
