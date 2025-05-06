@@ -492,6 +492,8 @@ function jo.menu.show(show, keepInput, hideRadar, animation, hideCursor)
     animation = animation == nil and true or animation
     hideCursor = hideCursor or false
 
+    LocalPlayer.state.menuOpen = show
+    
     nuiShow = show
     if timeoutClose then
       timeoutClose:clear()
