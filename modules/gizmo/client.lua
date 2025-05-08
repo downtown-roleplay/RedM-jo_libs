@@ -73,6 +73,11 @@ local function pointEntity()
     needUpdateCamNUI = true
 end
 
+local function updateLocalPlayerGizmoState(state)
+    LocalPlayer.state.gizmoActive = state
+end
+
+
 -- Initializes UI focus, camera, and other misc
 -- @param bool boolean
 local function showNUI(bool)
@@ -123,12 +128,14 @@ local function showNUI(bool)
     end
 
     gizmoActive = bool
+    updateLocalPlayerGizmoState(bool)
 end
 
 -- Disables controls, Radar, and Player Firing
 local function disableControls()
     DisableControlAction(0, `INPUT_ATTACK`, true)
 end
+
 
 -- Get the normal value of a control(s) used for movement & rotation
 -- @param control number | table
