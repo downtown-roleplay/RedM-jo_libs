@@ -1129,7 +1129,6 @@ function jo.component.getHeadFromSkinTone(ped, headIndex, skinTone)
     sex = IsPedMale(ped) and "M" or "F"
   end
   local result = ("CLOTHING_ITEM_%s_HEAD_%03d_V_%03d"):format(sex, headIndex or 1, skinTone or 1)
-  print("head: "..result)
   return result
 end
 
