@@ -1128,7 +1128,9 @@ function jo.component.getHeadFromSkinTone(ped, headIndex, skinTone)
   else
     sex = IsPedMale(ped) and "M" or "F"
   end
-  return ("CLOTHING_ITEM_%s_HEAD_%03d_V_%03d"):format(sex, headIndex or 1, skinTone or 1)
+  local result = ("CLOTHING_ITEM_%s_HEAD_%03d_V_%03d"):format(sex, headIndex or 1, skinTone or 1)
+  print("head: "..result)
+  return result
 end
 
 --- A function to get the lower body component hash from bodies index and skin tone

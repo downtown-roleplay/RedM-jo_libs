@@ -32,7 +32,7 @@ local fromFrameworkToStandard = {
       [959712255] = 7,
     }
   },
-  bodies = { 2, 1, 3, 4, 5, 6 },
+  bodies = { 1, 2, 3, 4, 5, 6 },
   ov_eyebrows = {
     [1] = { id = 0x07844317, standard = { sexe = "m", id = 012 } },
     [2] = { id = 0x0A83CA6E, standard = { sexe = "m", id = 006 } },
@@ -732,16 +732,14 @@ function jo.framework:revertSkinInternal(standard)
     return math.ceil((value) * 100)
   end
 
-
-
   reverted.sex = standard.model == "mp_female" and 2 or 1
   _, reverted.body_size = table.find(fromFrameworkToStandard.bodies, function(value) return value == standard.bodiesIndex end)
   standard.bodiesIndex = nil
   reverted.eyes_color = table.extract(standard, "eyesIndex")
-  reverted.head = math.ceil(standard.headIndex * 6)
+  _, reverted.head = table.find(fromFrameworkToStandard.heads[standard.model], function(value) return value == standard.headIndex end)
+  reverted.head = GetValue(reverted.head, standard.headIndex) * 6
   standard.headIndex = nil
   _, reverted.skin_tone = table.find(fromFrameworkToStandard.skin_tone, function(value, i) return value == standard.skinTone end)
-  
   reverted.teethHash = table.extract(standard, "teeth")
   reverted.teethIndex = fromFrameworkToStandard.teeths[standard.model][reverted.teethHash]
 
