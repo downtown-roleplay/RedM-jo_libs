@@ -72,7 +72,7 @@ function jo.entity.fadeOut(entity, duration)
 	local startAlpha = GetEntityAlpha(entity)
 	local alpha = startAlpha
 	local horses = {}
-	if IsEntityAVehicle(entity) then
+	if IsEntityAVehicle(entity) and GetEntityType(entity) ~= 2 then
 		local model = GetEntityModel(entity)
 		local horseCount = GetNumDraftVehicleHarnessPed(model)
 		for i = 0, horseCount - 1 do
