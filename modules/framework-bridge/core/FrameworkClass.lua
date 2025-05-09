@@ -447,7 +447,6 @@ function jo.framework:standardizeSkinInternal(skin)
   standard.eyesIndex = table.extract(skin, "eyes_color")
   local head = GetValue(skin.head, 1)
   skin.head = nil
-  skin.teeth = 0
   standard.headIndex = math.ceil(head / 6)
   standard.skinTone = fromFrameworkToStandard.skin_tone[table.extract(skin, "skin_tone")]
   standard.teethHash = skin.teethHash
