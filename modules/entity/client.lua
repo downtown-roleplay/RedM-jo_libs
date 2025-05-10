@@ -106,7 +106,7 @@ end
 function jo.entity.create(model, coords, ...)
 	local args = { ... }
 	local networked, fadeDuration = false, 0
-	if type(coords) == vector4 then
+	if type(coords) == 'vector4' then
 		networked = GetValue(args[1], false)
 		fadeDuration = GetValue(args[2], 0)
 	else
