@@ -100,7 +100,7 @@ end
 
 local function missingMenu(id)
   if not menuCreators[id] then
-    return eprint("The menu is missing: %s", id)
+    return eprint(("the menu is missing: %s"):format(id))
   end
   menuCreators[id]()
 end
