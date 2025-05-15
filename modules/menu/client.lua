@@ -478,6 +478,15 @@ local function loopMenu()
   end)
 end
 
+function jo.menu.keepInput(keepInput)
+  SetNuiFocusKeepInput(keepInput)
+  if not keepInput then
+    SetNuiFocus(true, true)
+  else
+    SetNuiFocus(true, false)
+  end
+end
+
 --- Show or hide a menu
 ---@param show boolean (Whether to show or hide the menu)
 ---@param keepInput? boolean (Whether to keep game input controls active <br> default: `true`)
