@@ -20,7 +20,7 @@ function jo.nui.load(uiName, url)
   })
 end
 
---- Forces focus on a specific NUI interface
+--- Forces focus on a specific NUI interface and don't spread events to other NUIs
 ---@param uiName string (The name of the NUI to focus on)
 function jo.nui.forceFocus(uiName)
   if not nuiLoaded[uiName] then return eprint("This nui is not loaded:", uiName) end
@@ -30,9 +30,16 @@ function jo.nui.forceFocus(uiName)
   })
 end
 
---- Resets the focus from any NUI interface
+--- Resets the focus from any NUI interface and spread events
 function jo.nui.resetFocus()
   SendNUIMessage({
     action = "jo_nui_reset_focus"
   })
+end
+
+--- A function to know if a nui is loaded
+---@param uiName string (The name of the NUI)
+---@return boolean (`true` if the nui is already loaded)
+function jo.nui.isLoaded(uiName)
+  return nuiLoaded[uiName] and true or false
 end

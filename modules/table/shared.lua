@@ -1,3 +1,5 @@
+jo.table = {}
+
 local type = type
 local setmetatable = setmetatable
 local getmetatable = getmetatable
@@ -187,4 +189,61 @@ function table.extract(t, key)
   return value
 end
 
-jo.table = {}
+--- A function to add a multiples table levels inside a variable if it not exists
+---@param ... table|string (if the 1st argument is a table, keys will be injected in it. Else, a new table will be created)
+---@return table (The new table with multiples table levels)
+function table.addMultiLevels(...)
+  local keys = { ... }
+  local main = {}
+  if type(keys[1]) == "table" then
+    main = keys[1]
+    table.remove(keys, 1)
+  end
+  local child = main
+  for i = 1, #keys do
+    local key = keys[i]
+    if not child[key] then
+      child[key] = {}
+    elseif i < #keys and type(child[key]) ~= "table" then
+      local s = "The value is not a table: ___"
+      for x = 1, i do
+        s = s .. ("[%s]"):format(tostring(keys[x]))
+      end
+      return {}, error(s)
+    end
+    child = child[key]
+  end
+  return main
+end
+
+--- Get a part of table with stard and end index
+---@param t table (The table to get from)
+---@param s? integer (The start intex <br> default:`1`)
+---@param e? integer (The end index <br> default:`s`)
+---@return table (The extracted table)
+function table.slice(t, s, e)
+  s = s or 1
+  e = e or s
+  local result = {}
+  -- copie tbl[s..e] vers result[1..]
+  table.move(t, s, e, 1, result)
+  return result
+end
+
+--- A function to know if a deep key exists in a table
+---@param t table (The table to check)
+---@param ... string (The list of keys to deep)
+---@return boolean, any (`true` if the value exists, else `false` / the value)
+function table.doesKeyExist(t, ...)
+  local keys = { ... }
+  if not t then return false end
+  local deep = t
+  local numberKeys = #keys
+  for i = 1, numberKeys - 1 do
+    local key = keys[i]
+    if not deep[key] then return false end
+    if not type(deep[key]) == "table" then return false end
+    deep = deep[key]
+  end
+  return deep[keys[numberKeys]] and true or false, deep[keys[numberKeys]]
+end

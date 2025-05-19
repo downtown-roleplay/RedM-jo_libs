@@ -100,9 +100,9 @@ end
 
 local function missingMenu(id)
   if not menuCreators[id] then
-    return eprint(("the menu is missing: %s"):format(id))
+    return eprint("The menu is missing: %s", id)
   end
-  menuCreators[id]()
+  CreateThreadNow(menuCreators[id])
 end
 
 ---@class MenuClass : table Menu class
@@ -478,15 +478,6 @@ local function loopMenu()
   end)
 end
 
-function jo.menu.keepInput(keepInput)
-  SetNuiFocusKeepInput(keepInput)
-  if not keepInput then
-    SetNuiFocus(true, true)
-  else
-    SetNuiFocus(true, false)
-  end
-end
-
 --- Show or hide a menu
 ---@param show boolean (Whether to show or hide the menu)
 ---@param keepInput? boolean (Whether to keep game input controls active <br> default: `true`)
@@ -501,8 +492,6 @@ function jo.menu.show(show, keepInput, hideRadar, animation, hideCursor)
     animation = animation == nil and true or animation
     hideCursor = hideCursor or false
 
-    LocalPlayer.state.menuOpen = show
-    
     nuiShow = show
     if timeoutClose then
       timeoutClose:clear()
