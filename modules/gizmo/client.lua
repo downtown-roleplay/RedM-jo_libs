@@ -335,6 +335,10 @@ function jo.gizmo.moveEntity(entity, cfg, allowPlace)
 
         if jo.prompt.isCompleted(groupName, config.keys.snapToGround) then
             PlaceObjectOnGroundProperly(entity)
+
+            local pos = GetEntityCoords(entity)
+            SetEntityCoords(entity, pos.x, pos.y, pos.z + 0.01, false, false, false, true)
+
             SendNUIMessage({
                 action = "SetupGizmo",
                 data = {
