@@ -143,8 +143,8 @@ jo.component.data.wearableStates = {
     [11] = "open_collar_rolled_sleeve",
   },
   neckwear = {
-    [0] = "base",     --down
-    [1] = -1829635046 --up
+    [0] = "base",   --down
+    [1] = "mask_up" --up
   },
   boots = {
     [0] = "base",       --upper
@@ -260,38 +260,6 @@ jo.component.data.expressions = {
   thighs = 64834,
 }
 jo.component.expressions = jo.component.data.expressions --deprecated name
-
-jo.component.data.waist_types = {
-  -2045421226,    -- smallest
-  -1745814259,
-  -325933489,
-  -1065791927,
-  -844699484,
-  -1273449080,
-  927185840,
-  149872391,
-  399015098,
-  -644349862,
-  1745919061,      -- default
-  1004225511,
-  1278600348,
-  502499352,
-  -2093198664,
-  -1837436619,
-  1736416063,
-  2040610690,
-  -1173634986,
-  -867801909,
-  1960266524,        -- biggest
-}
-
-jo.component.data.body_types = {
-  -1241887289,
-  61606861,
-  -369348190,
-  -20262001,
-  32611963,
-}
 
 --* -----------
 --* local functions
@@ -773,18 +741,20 @@ function jo.component.applySkin(ped, skin)
   local headHash = skin.headHash or jo.component.getHeadFromSkinTone(ped, skin.headIndex, skin.skinTone)
   jo.component.apply(ped, "heads", headHash)
 
-  local bodies_upper = skin.bodyUpperHash or jo.component.getBodiesUpperFromSkinTone(ped, skin.bodiesIndex, skin.skinTone)
+  local bodies_upper = skin.bodyUpperHash or
+      jo.component.getBodiesUpperFromSkinTone(ped, skin.bodiesIndex, skin.skinTone)
   jo.component.apply(ped, "body_upper", bodies_upper)
 
-  local bodies_lower = skin.bodyLowerHash or jo.component.getBodiesLowerFromSkinTone(ped, skin.bodiesIndex, skin.skinTone)
+  local bodies_lower = skin.bodyLowerHash or
+      jo.component.getBodiesLowerFromSkinTone(ped, skin.bodiesIndex, skin.skinTone)
   jo.component.apply(ped, "body_lower", bodies_lower)
 
   dprint("apply outfit")
   if skin.bodyType then
-    EquipMetaPedOutfit(ped, jo.component.data.body_types[skin.bodyType])
+    EquipMetaPedOutfit(ped, skin.bodyType)
   end
   if skin.bodyWeight then
-    EquipMetaPedOutfit(ped, jo.component.data.waist_types[skin.bodyWeight])
+    EquipMetaPedOutfit(ped, skin.bodyWeight)
   end
 
   jo.component.refreshPed(ped)
@@ -829,13 +799,6 @@ function jo.component.applySkin(ped, skin)
       overlay = table.merge(default, overlay)
     end
   end
-
-  Wait(100)
-
-  SetPedScale(ped, skin.bodyScale)
-
-  jo.component.waitPedLoaded(ped)
-
   if jo.isModuleLoaded("pedTexture", false) and NetworkGetEntityIsNetworked(ped) then
     jo.pedTexture.overwriteBodyPart(ped, "heads", skin.overlays, true)
   end
@@ -1135,8 +1098,7 @@ function jo.component.getHeadFromSkinTone(ped, headIndex, skinTone)
   else
     sex = IsPedMale(ped) and "M" or "F"
   end
-  local result = ("CLOTHING_ITEM_%s_HEAD_%03d_V_%03d"):format(sex, headIndex or 1, skinTone or 1)
-  return result
+  return ("CLOTHING_ITEM_%s_HEAD_%03d_V_%03d"):format(sex, headIndex or 1, skinTone or 1)
 end
 
 --- A function to get the lower body component hash from bodies index and skin tone
