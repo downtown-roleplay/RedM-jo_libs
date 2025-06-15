@@ -32,7 +32,37 @@ local fromFrameworkToStandard = {
       [959712255] = 7,
     }
   },
-  bodies = { 1, 2, 3, 4, 5, 6 },
+  bodies = { 
+    61606861,
+    -1241887289,
+    -369348190,
+    32611963,
+    -20262001,
+    -369348190
+  },
+  waist = {
+    -2045421226,
+    -1745814259,
+    -325933489,
+    -1065791927,
+    -844699484,
+    -1273449080,
+    927185840,
+    149872391,
+    399015098,
+    -644349862,
+    1745919061,
+    1004225511,
+    1278600348,
+    502499352,
+    -2093198664,
+    -1837436619,
+    1736416063,
+    2040610690,
+    -1173634986,
+    -867801909,
+    1960266524,
+  },
   ov_eyebrows = {
     [1] = { id = 0x07844317, standard = { sexe = "m", id = 012 } },
     [2] = { id = 0x0A83CA6E, standard = { sexe = "m", id = 006 } },
@@ -271,19 +301,6 @@ local fromFrameworkToStandard = {
   }
 }
 
-local function getTeethHash(model, id)
-  local hash = nil
-
-  for teethHash, value in pairs(fromFrameworkToStandard.teeths[model]) do
-    if value == id then
-      hash = teethHash
-      break
-    end
-  end
-
-  return hash
-end
-
 local function getStandardValuefromFramework(category, id)
   if not fromFrameworkToStandard[category]?[id] then return false end
   return fromFrameworkToStandard[category][id].standard
@@ -441,8 +458,8 @@ function jo.framework:standardizeSkinInternal(skin)
   end
 
   standard.model = table.extract(skin, "sex") == 2 and "mp_female" or "mp_male"
-  standard.bodiesIndex = GetValue(fromFrameworkToStandard.bodies[skin.body_size], skin.body_size)
-  standard.bodyType = standard.bodiesIndex
+  standard.bodiesIndex = GetValue(skin.body_size, fromFrameworkToStandard.bodies[skin.body_size])
+  standard.bodyType = fromFrameworkToStandard.bodies[skin.body_size]
   skin.body_size = nil
   standard.eyesIndex = table.extract(skin, "eyes_color")
   local head = GetValue(skin.head, 1)
@@ -458,7 +475,7 @@ function jo.framework:standardizeSkinInternal(skin)
     standard.beards_complete = table.extract(skin, "beard")
   end
   standard.bodyScale = self:convertToPercent(table.extract(skin, "height"))
-  standard.bodyWeight = table.extract(skin, "body_waist")
+  standard.bodyWeight = GetValue(fromFrameworkToStandard.waist[table.extract(skin, "body_waist")])
 
   standard.expressions = {
     arms = table.extract(skin, "arms_size"),
@@ -748,7 +765,8 @@ function jo.framework:revertSkinInternal(standard)
     reverted.beard = table.extract(standard, "beards_complete")
   end
   reverted.height = revertPercent(table.extract(standard, "bodyScale"))
-  reverted.body_waist = table.extract(standard, "bodyWeight")
+  _, reverted.body_waist = table.find(fromFrameworkToStandard.waist, function(value) return value == standard.body_waist end)
+  standard.body_waist = nil
   reverted.body_size = table.extract(standard, "bodyType")
   standard.model = nil
 
@@ -1049,8 +1067,4 @@ function jo.framework:updateUserSkinInternal(source, skin, overwrite)
       MySQL.update("UPDATE characters_appearance SET skin=? WHERE characterId=?", { json.encode(decoded), character.id })
     end)
   end
-end
-
-function jo.framework:createUser(source, data, spawnCoordinate, isDead)
-  print('createUser', source, data, spawnCoordinate, isDead)
 end

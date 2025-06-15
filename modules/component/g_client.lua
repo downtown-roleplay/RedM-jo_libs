@@ -261,38 +261,6 @@ jo.component.data.expressions = {
 }
 jo.component.expressions = jo.component.data.expressions --deprecated name
 
-jo.component.data.waist_types = {
-  -2045421226,    -- smallest
-  -1745814259,
-  -325933489,
-  -1065791927,
-  -844699484,
-  -1273449080,
-  927185840,
-  149872391,
-  399015098,
-  -644349862,
-  1745919061,      -- default
-  1004225511,
-  1278600348,
-  502499352,
-  -2093198664,
-  -1837436619,
-  1736416063,
-  2040610690,
-  -1173634986,
-  -867801909,
-  1960266524,        -- biggest
-}
-
-jo.component.data.body_types = {
-  -1241887289,
-  61606861,
-  -369348190,
-  -20262001,
-  32611963,
-}
-
 --* -----------
 --* local functions
 --* -----------
@@ -781,10 +749,10 @@ function jo.component.applySkin(ped, skin)
 
   dprint("apply outfit")
   if skin.bodyType then
-    EquipMetaPedOutfit(ped, jo.component.data.body_types[skin.bodyType])
+    EquipMetaPedOutfit(ped, skin.bodyType)
   end
   if skin.bodyWeight then
-    EquipMetaPedOutfit(ped, jo.component.data.waist_types[skin.bodyWeight])
+    EquipMetaPedOutfit(ped, skin.bodyWeight)
   end
 
   jo.component.refreshPed(ped)
