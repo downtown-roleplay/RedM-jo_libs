@@ -749,7 +749,7 @@ function jo.framework:revertSkinInternal(standard)
   end
 
   reverted.sex = standard.model == "mp_female" and 2 or 1
-  _, reverted.body_size = table.find(fromFrameworkToStandard.bodies, function(value) return value == standard.bodiesIndex end)
+  _, reverted.body_size = table.find(fromFrameworkToStandard.bodies, function(value, i) return value == standard.bodiesIndex end)
   standard.bodiesIndex = nil
   reverted.eyes_color = table.extract(standard, "eyesIndex")
   _, reverted.head = table.find(fromFrameworkToStandard.heads[standard.model], function(value) return value == standard.headIndex end)
@@ -767,7 +767,6 @@ function jo.framework:revertSkinInternal(standard)
   reverted.height = revertPercent(table.extract(standard, "bodyScale"))
   _, reverted.body_waist = table.find(fromFrameworkToStandard.waist, function(value) return value == standard.body_waist end)
   standard.body_waist = nil
-  reverted.body_size = table.extract(standard, "bodyType")
   standard.model = nil
 
   reverted.arms_size = revertPercent(table.extract(standard.expressions, "arms"))
