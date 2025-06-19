@@ -2,7 +2,7 @@
 -- USER CLASS
 -------------
 
-local Core = exports.core:getSharedObject()
+local Core = exports.core:GetCoreObject()
 
 local UserClass = {}
 
