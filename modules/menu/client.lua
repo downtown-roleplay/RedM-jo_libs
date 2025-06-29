@@ -259,7 +259,11 @@ function jo.menu.updateItem(id, index, key, value) menus[id]:updateItem(index, k
 
 --- Refresh the menu display without changing the current state
 --- Used when menu items have been modified
-function MenuClass:refresh()
+function MenuClass:refresh(bool)
+  bool = bool or false
+  if bool then
+    return self:send()
+  end
   local datas = table.clearForNui(self)
   datas.currentIndex = nil
   SendNUIMessage({
