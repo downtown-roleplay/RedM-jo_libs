@@ -85,6 +85,8 @@ local function showNUI(bool)
         SetNuiFocus(true, true)
         SetNuiFocusKeepInput(true)
 
+        jo.nui.forceFocus("jo_gizmo")
+
         if enableCam then
             local coords = GetGameplayCamCoord()
             local rot = GetGameplayCamRot(2)
@@ -107,6 +109,8 @@ local function showNUI(bool)
         SetNuiFocus(false, false)
         SetNuiFocusKeepInput(IsNuiFocusKeepingInput())
         FreezeEntityPosition(PlayerPedId(), false)
+
+        jo.nui.resetFocus()
 
         if cam then
             RenderScriptCams(false, true, 500, true, true)
