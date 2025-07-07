@@ -1058,6 +1058,13 @@ end
 function jo.framework:updateUserSkinInternal(source, skin, overwrite)
   local character = Core.GetCharacterFromPlayerId(source)
   
+  for cat, data in pairs(skin) do
+    if cat == "Teeth" then
+      self:updateUserClothesInternal(source, { Teeth = { hash = self:extractComponentHashIfAlone(data) } })
+      skin[cat] = nil
+    end
+  end
+
   if overwrite then
     MySQL.update("UPDATE characters_appearance SET skin=? WHERE characterId=?", { json.encode(skin), character.id })
   else
