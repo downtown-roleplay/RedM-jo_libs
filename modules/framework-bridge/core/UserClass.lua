@@ -47,14 +47,23 @@ end
 function jo.framework.UserClass:addMoney(source, amount, moneyType)
   local character = Core.GetCharacterFromPlayerId(source)
   local user = Core.GetUserFromPlayerId(source)
-  if moneyType == 0 and (character.addMoney(amount)) or (moneyType == 1 and user.addGold(amount)) or 0 then end
+  if moneyType == 0 then
+    return character.addMoney(amount) and true or false
+  elseif moneyType == 1 then
+    return user.addGold(amount) and true or false
+  end
+  return false
 end
-
 
 function jo.framework.UserClass:removeMoney(amount, moneyType)
   local character = Core.GetCharacterFromPlayerId(self.source)
   local user = Core.GetUserFromPlayerId(self.source)
-  if moneyType == 0 and (character.removeMoney(amount)) or (moneyType == 1 and user.removeGold(amount)) or 0 then end
+  if moneyType == 0 then
+    return character.removeMoney(amount) and true or false
+  elseif moneyType == 1 then
+    return user.removeGold(amount) and true or false
+  end
+  return false
 end
 
 function jo.framework.UserClass:getIdentifiers()
