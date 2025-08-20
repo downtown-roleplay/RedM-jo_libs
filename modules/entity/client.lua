@@ -74,7 +74,7 @@ function jo.entity.fadeOut(entity, duration)
 	local startAlpha = GetEntityAlpha(entity)
 	local alpha = startAlpha
 	local horses = {}
-	if IsEntityAVehicle(entity) == 1 and IsThisModelADraftVehicle(GetEntityModel(entity)) == 1 then
+	if IsEntityAVehicle(entity) then
 		local model = GetEntityModel(entity)
 		local horseCount = GetNumDraftVehicleHarnessPed(model)
 		for i = 0, horseCount - 1 do
@@ -108,7 +108,7 @@ end
 function jo.entity.create(model, coords, ...)
 	local args = { ... }
 	local networked, fadeDuration = false, 0
-	if type(coords) == "vector4" then
+	if type(coords) == vector4 then
 		networked = GetValue(args[1], false)
 		fadeDuration = GetValue(args[2], 0)
 	else
@@ -247,4 +247,40 @@ function jo.entity.createWithMouse(model, keepEntity, networked)
 	end
 
 	return entity, previousCoord, heading
+end
+
+--- Delete all scenarios from an entity
+---@param entity integer (The entity ID to delete scenarios from)
+---@param size? number (The size of the area to search for scenarios <br> default:2.0)
+---@param maxScenario? number (The maximum number of scenarios to search for <br> default:8)
+---@param maxAttempt? number (The maximum number of attempts to delete scenarios <br> default:10)
+---@param waitTime? number (The time to wait between attempts to delete scenarios <br> default:100)
+function jo.entity.deleteScenariosFromEntity(entity, size, maxScenario, maxAttempt, waitTime)
+	if not DoesEntityExist(entity) then return eprint("Entity does not exist", entity) end
+	size = size or 2.0
+	maxScenario = maxScenario or 8
+	maxAttempt = maxAttempt or 10
+	waitTime = waitTime or 100
+	CreateThreadNow(function()
+		for attempt = 1, maxAttempt do
+			local coordinates = GetEntityCoords(entity)
+			local data = DataView.ArrayBuffer(8 * (maxScenario + 2))
+			local get = GetScenarioPointsInArea(coordinates, size, data:Buffer(), maxScenario)
+			if get then
+				local find = false
+				for j = 1, maxScenario + 2 do
+					local value = data:GetInt32(j * 8 - 8)
+					if (value ~= 0) then
+						local scenarioEntity = GetScenarioPointEntity(value)
+						if entity == scenarioEntity then
+							SetScenarioPointActive(value, false)
+							find = true
+						end
+					end
+				end
+				if find then return end
+			end
+			Wait(waitTime)
+		end
+	end)
 end

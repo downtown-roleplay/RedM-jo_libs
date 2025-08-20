@@ -287,18 +287,52 @@ function jo.framework:createInventory(id, name, invConfig)
     inventory = {}
   }
 
-  inventoriesCreated[id].inventory = Inventory:registerInventory({
+  local invData = {
     id = id,
     name = name,
     limit = invConfig.maxSlots,
     acceptWeapons = GetValue(invConfig.acceptWeapons, false),
     shared = GetValue(invConfig.shared, true),
     ignoreItemStackLimit = GetValue(invConfig.ignoreStackLimit, true),
-    whitelistItems = invConfig.whitelist and true or false,
-  })
-  for _, data in pairs(invConfig.whitelist or {}) do
-    Inventory:setCustomInventoryItemLimit(id, data.item, data.limit)
+    whitelistItems   = GetValue(invConfig.useWhitelist, invConfig.whitelist and true or false),
+    UseBlackList     = GetValue(invConfig.useBlackList, invConfig.blacklist and true or false),
+    whitelistWeapons = GetValue(invConfig.useWeaponlist, invConfig.weaponlist and true or false),
+  }
+
+  if exports.vorp_inventory:isCustomInventoryRegistered(id) then
+    exports.vorp_inventory:updateCustomInventoryData(id, invData)
+    inventoriesCreated[id].inventory = exports.vorp_inventory:getCustomInventoryData(id)
+  else
+    inventoriesCreated[id].inventory = exports.vorp_inventory:registerInventory(invData)
   end
+
+  if invConfig.permissions then
+    for _, permission in ipairs(invConfig.permissions.allowedJobsTakeFrom or {}) do
+      exports.vorp_inventory:AddPermissionTakeFromCustom(id, permission.name or permission.job, permission.grade)
+    end
+    for _, permission in ipairs(invConfig.permissions.allowedJobsMoveTo or {}) do
+      exports.vorp_inventory:AddPermissionMoveToCustom(id, permission.name or permission.job, permission.grade)
+    end
+  end
+
+  if invData.whitelistItems then
+    for _, item in ipairs(invConfig.whitelist or {}) do
+      exports.vorp_inventory:setCustomInventoryItemLimit(id, item.name or item.item, item.limit)
+    end
+  end
+
+  if invData.whitelistWeapons then
+    for _, weapon in ipairs(invConfig.weaponlist or {}) do
+      exports.vorp_inventory:setCustomInventoryWeaponLimit(id, weapon.name or weapon.weapon, weapon.limit)
+    end
+  end
+
+  if invData.UseBlackList then
+    for _, item in ipairs(invConfig.blacklist or {}) do
+      exports.vorp_inventory:BlackListCustomAny(id, item)
+    end
+  end
+
   return inventoriesCreated[id].inventory
 end
 
@@ -330,8 +364,9 @@ end
 
 function jo.framework:getItemsFromInventory(invId)
   local invItems = Inventory:getCustomInventoryItems(invId) or {}
-
+  local weaponItems = Inventory:getCustomInventoryWeapons(invId) or {}
   local items = {}
+
   for i = 1, #invItems do
     items[i] = {
       id = invItems[i].id,
@@ -340,6 +375,20 @@ function jo.framework:getItemsFromInventory(invId)
       metadata = invItems[i].metadata
     }
   end
+
+  for i = 1, #weaponItems do
+    items[#items + 1] = {
+      id = weaponItems[i].id,
+      amount = 1,
+      item = weaponItems[i].name,
+      metadata = {
+        label = weaponItems[i].label,
+        custom_desc = weaponItems[i].custom_desc,
+        serial_number = weaponItems[i].serial_number,
+      }
+    }
+  end
+
   return items
 end
 
