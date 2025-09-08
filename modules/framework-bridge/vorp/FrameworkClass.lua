@@ -294,8 +294,8 @@ function jo.framework:createInventory(id, name, invConfig)
     acceptWeapons = GetValue(invConfig.acceptWeapons, false),
     shared = GetValue(invConfig.shared, true),
     ignoreItemStackLimit = GetValue(invConfig.ignoreStackLimit, true),
-    whitelistItems   = GetValue(invConfig.useWhitelist, invConfig.whitelist and true or false),
-    UseBlackList     = GetValue(invConfig.useBlackList, invConfig.blacklist and true or false),
+    whitelistItems = GetValue(invConfig.useWhitelist, invConfig.whitelist and true or false),
+    UseBlackList = GetValue(invConfig.useBlackList, invConfig.blacklist and true or false),
     whitelistWeapons = GetValue(invConfig.useWeaponlist, invConfig.weaponlist and true or false),
   }
 
@@ -396,6 +396,37 @@ end
 -- SKIN & CLOTHES
 -------------
 
+local function getBodyUpperHash(sex, skin)
+  for skinTint = 1, 6 do
+    for index = 1, 5 do
+      local value = jo.component.getBodiesUpperFromSkinTone(sex, index, skinTint)
+      if (skin.BodyType == value) then
+        return value, skinTint, index
+      end
+      if (skin.Torso == value) then
+        return value, skinTint, index
+      end
+      if (skin.Body == value) then
+        return value, skinTint, index
+      end
+    end
+  end
+end
+
+local function getBodyLowerHash(sex, skin)
+  for skinTint = 1, 6 do
+    for index = 1, 5 do
+      local value = jo.component.getBodiesLowerFromSkinTone(sex, index, skinTint)
+      if (skin.LegsType == value) then
+        return value, skinTint, index
+      end
+      if (skin.Legs == value) then
+        return value, skinTint, index
+      end
+    end
+  end
+end
+
 function jo.framework:standardizeSkinInternal(skin)
   local standard = {}
 
@@ -405,10 +436,10 @@ function jo.framework:standardizeSkinInternal(skin)
 
   standard.model = table.extract(skin, "sex")
   standard.headHash = table.extract(skin, "HeadType")
-  standard.bodyUpperHash = skin.BodyType ~= 0 and skin.BodyType or skin.Torso
+  standard.bodyUpperHash = getBodyUpperHash(standard.model, skin)
   skin.BodyType = nil
   skin.Torso = nil
-  standard.bodyLowerHash = skin.LegsType ~= 0 and skin.LegsType or skin.Legs
+  standard.bodyLowerHash = getBodyLowerHash(standard.model, skin)
   skin.LegsType = nil
   skin.Legs = nil
   standard.eyesHash = table.extract(skin, "Eyes")
