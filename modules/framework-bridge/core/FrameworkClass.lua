@@ -324,6 +324,48 @@ function jo.framework:giveItem(source, item, amount, metadata)
   return exports.inventory:AddItem(source, item, amount, metadata)
 end
 
+-------------
+-- SKIN & CLOTHES
+-------------
+
+local function getBodyUpperHash(sex, skin)
+  for skinTint = 1, 6 do
+    for index = 1, 6 do
+      local value = joaat(jo.component.getBodiesUpperFromSkinTone(sex, index, skinTint))
+      if (skin.BodyType == value) then
+        return value, skinTint, index
+      end
+      if (skin.Torso == value) then
+        return value, skinTint, index
+      end
+      if (skin.Body == value) then
+        return value, skinTint, index
+      end
+    end
+  end
+  dprint("No Upper body found for:")
+  dprint("BodyType:", skin.BodyType)
+  dprint("Torso:", skin.Torso)
+  dprint("Body:", skin.Body)
+end
+
+local function getBodyLowerHash(sex, skin)
+  for skinTint = 1, 6 do
+    for index = 1, 6 do
+      local value = joaat(jo.component.getBodiesLowerFromSkinTone(sex, index, skinTint))
+      if (skin.LegsType == value) then
+        return value, skinTint, index
+      end
+      if (skin.Legs == value) then
+        return value, skinTint, index
+      end
+    end
+  end
+  dprint("No Lower body found for:")
+  dprint("LegsType:", skin.LegsType)
+  dprint("Legs:", skin.Legs)
+end
+
 function jo.framework:standardizeClothesInternal(clothes)
   local standard = {
     accessories = table.extract(clothes, "Accessories"),
@@ -367,7 +409,6 @@ function jo.framework:standardizeClothesInternal(clothes)
   }
   return standard
 end
-
 function jo.framework:revertClothesInternal(standard)
   local reverted = {
     Accessories = table.extract(standard, "accessories"),
@@ -421,10 +462,10 @@ function jo.framework:standardizeSkinInternal(skin)
 
   standard.model = table.extract(skin, "sex")
   standard.headHash = table.extract(skin, "HeadType")
-  standard.bodyUpperHash = skin.BodyType ~= 0 and skin.BodyType or skin.Torso
+  standard.bodyUpperHash = getBodyUpperHash(standard.model, skin)
   skin.BodyType = nil
   skin.Torso = nil
-  standard.bodyLowerHash = skin.LegsType ~= 0 and skin.LegsType or skin.Legs
+  standard.bodyLowerHash = getBodyLowerHash(standard.model, skin)
   skin.LegsType = nil
   skin.Legs = nil
   standard.eyesHash = table.extract(skin, "Eyes")
