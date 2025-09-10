@@ -190,6 +190,7 @@ local MenuClass = {
 ---@field disabled boolean Item disabled
 ---@field textRight string|boolean Item text right
 ---@field bufferOnChange boolean Item buffer on change
+---@field index number
 ---@field onActive function Item on active
 ---@field onClick function Item on click
 ---@field onChange function Item on change
@@ -259,6 +260,11 @@ function MenuItem:deleteValue(keys)
   table.insert(keys, 1, self.index)
   table.insert(keys, 1, "items")
   menu:deleteValue(keys)
+end
+
+--- Delete the item from menu
+function MenuItem:remove()
+  self:getParentMenu():removeItem(self.index)
 end
 
 --- Get the parent menu of the item
