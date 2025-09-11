@@ -9,3 +9,7 @@ AddEventHandler("rdr_clothes_store:ApplyClothes", function(clothes, ped, skin)
   ped = ped or PlayerPedId()
   TriggerServerEvent("jo_libs:server:applySkinAndClothes", ped, skin, clothes)
 end)
+
+function jo.framework:getInventoryItems()
+  return jo.callback.triggerServer("jo_framework_getInventoryItems")
+end
