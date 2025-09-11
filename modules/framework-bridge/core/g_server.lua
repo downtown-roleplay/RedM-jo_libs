@@ -1,7 +1,19 @@
 
-local function getItemsFromDB()
-  return exports.inventory:Items()
+function getItemsFromDB()
+    local awaitItems = promise.new()
+    local items = {}
+
+    local tempItems = exports.inventory:Items()
+
+    for _, item in pairs(tempItems) do
+        item.image = ("https://cdn.downtownrp.com.br/images/resources/inventory/%s.png"):format(item.name)
+        items[item.name] = item;
+    end
+    
+    awaitItems:resolve(items)
+    return Await(awaitItems)
 end
+
 
 jo.ready(function()
   Wait(1000)
