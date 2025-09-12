@@ -327,7 +327,11 @@ end
 -------------
 -- SKIN & CLOTHES
 -------------
+
 local function getHeadHash(sex, skin)
+  if skin.HeadType == 0 then
+    return skin.HeadType, 1, 1
+  end
   for skinTint = 1, 6 do
     for index = 1, 28 do
       local value = jo.component.getHeadFromSkinTone(sex, index, skinTint)
@@ -344,41 +348,65 @@ local function getHeadHash(sex, skin)
 end
 
 local function getBodyUpperHash(sex, skin)
+  dprint("getBodyUpperHash", sex, skin.BodyType, skin.Torso)
+  if skin.BodyType == 0 and skin.Torso == 0 then
+    return skin.BodyType, 1, 1
+  end
   for skinTint = 1, 6 do
-    for index = 1, 6 do
-      local value = joaat(jo.component.getBodiesUpperFromSkinTone(sex, index, skinTint))
-      if (skin.BodyType == value) then
-        return value, skinTint, index
+    for index = 0, 6 do
+      local value = jo.component.getBodiesUpperFromSkinTone(sex, index, skinTint)
+      local hash = joaat(value)
+      if (skin.BodyType == hash) then
+        dprint("getBodyUpperHash", "BodyType", value, hash, skinTint, index)
+        return hash, skinTint, index
       end
-      if (skin.Torso == value) then
-        return value, skinTint, index
-      end
-      if (skin.Body == value) then
-        return value, skinTint, index
+    end
+  end
+  for skinTint = 1, 6 do
+    for index = 0, 6 do
+      local value = jo.component.getBodiesUpperFromSkinTone(sex, index, skinTint)
+      local hash = joaat(value)
+      if (skin.Torso == hash) then
+        dprint("getBodyUpperHash", "Torso", value, hash, skinTint, index)
+        return hash, skinTint, index
       end
     end
   end
   dprint("No Upper body found for:")
   dprint("BodyType:", skin.BodyType)
   dprint("Torso:", skin.Torso)
-  dprint("Body:", skin.Body)
+  return skin.BodyType, 1, 1
 end
 
 local function getBodyLowerHash(sex, skin)
+  dprint("getBodyLowerHash", sex, skin.LegsType, skin.Legs, skin.Body)
+  if skin.LegsType == 0 and skin.Legs == 0 then
+    return skin.LegsType, 1, 1
+  end
   for skinTint = 1, 6 do
-    for index = 1, 6 do
-      local value = joaat(jo.component.getBodiesLowerFromSkinTone(sex, index, skinTint))
-      if (skin.LegsType == value) then
-        return value, skinTint, index
+    for index = 0, 6 do
+      local value = jo.component.getBodiesLowerFromSkinTone(sex, index, skinTint)
+      local hash = joaat(value)
+      if (skin.LegsType == hash) then
+        dprint("getBodyLowerHash", "LegsType", value, hash, skinTint, index)
+        return hash, skinTint, index
       end
-      if (skin.Legs == value) then
-        return value, skinTint, index
+    end
+  end
+  for skinTint = 1, 6 do
+    for index = 0, 6 do
+      local value = jo.component.getBodiesLowerFromSkinTone(sex, index, skinTint)
+      local hash = joaat(value)
+      if (skin.Legs == hash) then
+        dprint("getBodyLowerHash", "Legs", value, hash, skinTint, index)
+        return hash, skinTint, index
       end
     end
   end
   dprint("No Lower body found for:")
   dprint("LegsType:", skin.LegsType)
   dprint("Legs:", skin.Legs)
+  return skin.LegsType, 1, 1
 end
 
 function jo.framework:standardizeClothesInternal(clothes)
