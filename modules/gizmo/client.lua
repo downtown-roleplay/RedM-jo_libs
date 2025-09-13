@@ -175,6 +175,7 @@ local function showNUI(bool)
     end
 
     gizmoActive = bool
+    LocalPlayer.state.gizmoActive = gizmoActive
     dprint("[GIZMO DEBUG] showNUI complete, gizmoActive:", gizmoActive)
 end
 
