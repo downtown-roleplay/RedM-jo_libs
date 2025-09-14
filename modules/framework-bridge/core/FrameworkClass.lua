@@ -500,7 +500,7 @@ function jo.framework:standardizeSkinInternal(skin)
   local standard = {}
 
   local function decrease(value)
-    return GetValue(value, 1) - 1
+    return GetValue(value, 1)
   end
 
   standard.model = table.extract(skin, "sex")
@@ -813,7 +813,7 @@ function jo.framework:revertSkinInternal(standard)
   local reverted = {}
 
   local function increase(value)
-    return GetValue(value, 0) + 1
+    return GetValue(value, 0)
   end
 
   reverted.sex = table.extract(standard, "model")
