@@ -1107,6 +1107,7 @@ end
 
 function jo.framework:getUserClothesInternal(source)
   local character = Core.GetCharacterFromPlayerId(source)
+  if not character then return {} end
 
   local clothes = MySQL.scalar.await("SELECT clothes FROM characters_outfit WHERE ownerId=?", { character.id })
   
@@ -1117,6 +1118,7 @@ end
 
 function jo.framework:updateUserClothesInternal(source, clothes)
   local character = Core.GetCharacterFromPlayerId(source)
+  if not character then return {} end
 
   MySQL.scalar("SELECT clothes FROM characters_outfit WHERE ownerId=? ", { character.id }, function(oldClothes)
     local decoded = UnJson(oldClothes)

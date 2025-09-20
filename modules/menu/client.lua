@@ -23,7 +23,6 @@ jo.menu.listeners = {}
 local nuiShow = false
 local timeoutClose = nil
 local currentMinimapType = GetMinimapType()
-local clockStart = GetGameTimer()
 local currentData = {}
 local previousData = {}
 local previousKeepingInput = false
@@ -57,7 +56,7 @@ local function updateSliderCurrentValue(item)
         slider.value[2] = slider.values[2] and math.floor(slider.values[2].current * 1000) / 1000 or nil
       elseif slider.type == "palette" then
         slider.value = slider.current
-      else
+      elseif slider.values then
         slider.value = slider.values[slider.current]
       end
     end
@@ -125,8 +124,8 @@ local function menuNUIChange(data)
       jo.menu.fireEvent(menus[previousData.menu], "onChange")
     end
 
-    for _, listener in ipairs(jo.menu.listeners) do
-      listener.cb(currentData)
+    for i = 1, #jo.menu.listeners do
+      jo.menu.listeners[i].cb(currentData)
     end
 
     previousData = table.copy(currentData)
@@ -190,7 +189,6 @@ local MenuClass = {
 ---@field disabled boolean Item disabled
 ---@field textRight string|boolean Item text right
 ---@field bufferOnChange boolean Item buffer on change
----@field index number
 ---@field onActive function Item on active
 ---@field onClick function Item on click
 ---@field onChange function Item on change
@@ -264,7 +262,7 @@ end
 
 --- Delete the item from menu
 function MenuItem:remove()
-  self:getParentMenu():removeItem(self.index)
+  self:getParentMenu():deleteItem(self.index)
 end
 
 --- Get the parent menu of the item
@@ -335,21 +333,6 @@ function MenuClass:addItem(index, item)
   return item
 end
 
---- Remove an item from a menu by its index. Requires MenuClass:push() to be called to apply the changes
----@param index integer (The index of the item to remove)
-function MenuClass:removeItem(index)
-  if not index then return eprint("MenuClass:removeItem > index can't be nil") end
-  table.remove(self.items, index)
-  if index < #self.items then
-    for i = 1, #self.items do
-      self.items[i].index = i
-    end
-  end
-  if jo.menu.isCurrentMenu(self.id) and jo.menu.getCurrentIndex() >= index then
-    menusNeedRefresh[self.id] = true
-  end
-end
-
 --- Add an item to a menu by its ID
 ---@param id string (The menu ID)
 ---@param p integer|table (Position index or item table if used as single parameter)
@@ -379,26 +362,6 @@ end
 --- item.onExit? function (Fired when the item is exited)
 function jo.menu.addItem(id, p, item) menus[id]:addItem(p, item) end
 
---- @autodoc:config ignore:true
-function MenuClass:addItems(items)
-  oprint("Warning : addItems has potential memory leak, use addItem in a loop instead")
-  for _, item in ipairs(items) do
-    self:addItem(item)
-  end
-end
-
---- @autodoc:config ignore:true
-function jo.menu.addItems(id, items) menus[id]:addItems(items) end
-
---- Update a specific property of a menu item
----@deprecated since v2.3.0. Use MenuClass:updateValue or MenuClass:deleteValue instead
----@param index integer (The index of the item to update)
----@param key string (The property name to update)
----@param value any (The new value for the property)
-function MenuClass:updateItem(index, key, value)
-  self.items[index][key] = value
-end
-
 --- Update a specific property of a menu item by menu ID
 ---@param id string (The menu ID)
 ---@param index integer (The index of the item to update)
@@ -409,18 +372,20 @@ function jo.menu.updateItem(id, index, key, value) menus[id]:updateItem(index, k
 --- Update a specific property of a menu. Requires MenuClass:push() to be called to apply the changes
 ---@param keys string|table (The list of property name to access to the value)
 ---@param value any (The new value)
+---@return boolean (true if the update was successful, false otherwise)
 function MenuClass:updateValue(keys, value)
   if type(keys) ~= "table" then keys = { keys } end
   if keys[#keys] == "price" then
     value = jo.menu.formatPrice(value)
   end
   local v = table.copy(value)
+  table.upsert(self, keys, v)
   table.insert(self.updatedValues, {
     keys = keys,
     action = "update",
     value = v
   })
-  table.upsert(self, keys, v)
+  return true
 end
 
 --- Delete a specific property of a menu. Requires MenuClass:push() to be called to apply the changes
@@ -432,6 +397,14 @@ function MenuClass:deleteValue(keys)
     action = "delete"
   })
   table.deleteDeepValue(self, keys)
+end
+
+function MenuClass:deleteItem(index)
+  table.remove(self.items, index)
+  table.insert(self.updatedValues, {
+    keys = { "items", index },
+    action = "delete"
+  })
 end
 
 
@@ -460,14 +433,26 @@ end
 --- Push the updated values to the NUI layer
 function MenuClass:push()
   if not self.updatedValues then return dprint("") end
-  local updated = clearDataForNui(self.updatedValues)
 
+  if jo.menu.isCurrentMenu(self.id) then
+    local newIndex = math.min(self.currentIndex, #self.items)
+    if newIndex ~= self.currentIndex then
+      self.currentIndex = newIndex
+      table.insert(self.updatedValues, {
+        keys = { "currentIndex" },
+        action = "update",
+        value = newIndex
+      })
+    end
+  end
+
+  local updated = clearDataForNui(self.updatedValues)
   SendNUIMessage({
     event = "updateMenuValues",
     menu = self.id,
-    updated = updated,
-    deleted = deleted
+    updated = updated
   })
+
   self.updatedValues = {}
 end
 
@@ -835,13 +820,14 @@ end
 ---@return boolean
 function jo.menu.isCurrentMenu(id)
   if not jo.menu.isOpen() then return false end
-  return currentData.menu == id
+  return jo.menu.getCurrentMenuId() == id
 end
 
 --- A function to get the current index
 ---@return integer (The index of the current item)
 function jo.menu.getCurrentIndex()
-  return currentData.index
+  local menu = jo.menu.getCurrentMenu()
+  return menu.currentIndex
 end
 
 --- A function to fire menu and items events
@@ -856,7 +842,8 @@ end
 --- A function to get the current menu id
 ---@return string (The id of the current menu)
 function jo.menu.getCurrentMenuId()
-  return currentData.menu
+  local menu = jo.menu.getCurrentMenu()
+  return menu.id
 end
 
 --- A function to display the loader
@@ -904,6 +891,17 @@ RegisterNUICallback("onBeforeEnter", function(data, cb)
   cb("ok")
 end)
 
+RegisterNUICallback("messageReceived", function(data, cb)
+  messageSending = false
+  cb("ok")
+end)
+
+RegisterNUICallback("updatePreview", function(data, cb)
+  cb("ok")
+  menuNUIChange(data)
+end)
+
+
 --- Register a handler for missing menu error
 ---@param id string (The menu ID)
 ---@param callback function (The handler function)
@@ -950,15 +948,56 @@ function jo.menu.fireAllLevelsEvent(eventName, ...)
   jo.menu.fireEvent(jo.menu.getCurrentItem(), eventName, ...)
 end
 
-RegisterNUICallback("updatePreview", function(data, cb)
-  cb("ok")
+--------------
+-- DEPRECATED FUNCTIONS
+-------------
 
-  menuNUIChange(data)
-end)
+--- Update a specific property of a menu item
+---@deprecated since v2.3.0. Use MenuClass:updateValue or MenuClass:deleteValue instead
+---@param index integer (The index of the item to update)
+---@param key string (The property name to update)
+---@param value any (The new value for the property)
+function MenuClass:updateItem(index, key, value)
+  self.items[index][key] = value
+end
+
+--- @autodoc:config ignore:true
+---@deprecated since v2.4.0. Use MenuClass:addItem in a loop instead
+function MenuClass:addItems(items)
+  oprint("Warning : addItems has potential memory leak, use addItem in a loop instead")
+  for _, item in ipairs(items) do
+    self:addItem(item)
+  end
+end
+
+--- @autodoc:config ignore:true
+---@deprecated since v2.4.0. Use MenuClass:addItem in a loop instead
+function jo.menu.addItems(id, items) menus[id]:addItems(items) end
+
+--- Remove an item from a menu by its index. Requires MenuClass:push() to be called to apply the changes
+---@deprecated since v2.4.0. Use MenuClass:deleteItem instead
+---@param index integer (The index of the item to remove)
+function MenuClass:removeItem(index)
+  if not index then return eprint("MenuClass:removeItem > index can't be nil") end
+  table.remove(self.items, index)
+  if index < #self.items then
+    for i = 1, #self.items do
+      self.items[i].index = i
+    end
+  end
+  if jo.menu.isCurrentMenu(self.id) and jo.menu.getCurrentIndex() >= index then
+    menusNeedRefresh[self.id] = true
+  end
+end
+
+-------------
+-- EXPORTS
+-------------
 
 exports("jo_menu_get", function()
   return jo.menu
 end)
+
 exports("jo_menu_get_current_data", function()
   return currentData
 end)
