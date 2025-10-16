@@ -73,7 +73,7 @@ function jo.framework.UserClass:getIdentifiers()
     return {
         id = tonumber(user?.id),
         charid = tonumber(character?.id),
-        identifier = tonumber(character?.identifier)
+        identifier = tostring(character?.identifier)
     }
 end
 

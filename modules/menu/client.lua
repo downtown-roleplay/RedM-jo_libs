@@ -418,21 +418,22 @@ function MenuClass:refresh()
     menu = self.id,
     data = datas
   })
-  if menusNeedRefresh[self.id] then
-    if jo.menu.isCurrentMenu(self.id) then
-      if self.currentIndex > #self.items then
-        self:setCurrentIndex(#self.items)
-      end
-      self.currentIndex = math.min(self.currentIndex, #self.items)
-      jo.menu.runRefreshEvents(false, true)
+  -- if menusNeedRefresh[self.id] then
+  if jo.menu.isCurrentMenu(self.id) then
+    if self.currentIndex > #self.items then
+      self:setCurrentIndex(#self.items)
     end
-    menusNeedRefresh[self.id] = nil
+    self.currentIndex = math.min(self.currentIndex, #self.items)
+    jo.menu.runRefreshEvents(false, true)
   end
+  menusNeedRefresh[self.id] = nil
+  -- end
 end
 
 --- Push the updated values to the NUI layer
 function MenuClass:push()
-  if not self.updatedValues then return dprint("") end
+  if not self.updatedValues then return end
+  if table.isEmpty(self.updatedValues) then return end
 
   if jo.menu.isCurrentMenu(self.id) then
     local newIndex = math.min(self.currentIndex, #self.items)
@@ -520,7 +521,8 @@ function jo.menu.sort(id, first, last) menus[id]:sort(first, last) end
 --- Send the menu data to the NUI layer
 function MenuClass:send()
   if self.sentToNUI then
-    return error("Menu already sent, please use menu:refresh(): " .. self.id)
+    self:refresh()
+    return
   end
   local datas = clearDataForNui(self)
   SendNUIMessage({
@@ -587,6 +589,18 @@ function jo.menu.create(id, data)
   menus[id].id = id
   -- menus[id]:send()
   return menus[id]
+end
+
+--- Create a new menu if it doesn't exist
+---@param id string (Unique ID of the menu)
+---@param data? table (Menu configuration data)
+---@return MenuClass (The newly created menu object)
+---@return boolean (Returns `true` if the menu was created)
+function jo.menu.createIfNotExist(id, data)
+  if jo.menu.isExist(id) then
+    return jo.menu.get(id), false
+  end
+  return jo.menu.create(id, data), true
 end
 
 --- Delete a menu from memory

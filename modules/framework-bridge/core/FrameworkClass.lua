@@ -1156,3 +1156,9 @@ function jo.framework:updateUserSkinInternal(source, skin, overwrite)
     end)
   end
 end
+
+function jo.framework:onCharacterSelected(cb)
+  AddEventHandler("characterLoaded", function(characterData)
+    cb(characterData.playerId)
+  end)
+end
