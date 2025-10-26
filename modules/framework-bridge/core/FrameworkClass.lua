@@ -805,6 +805,7 @@ function jo.framework:standardizeSkinInternal(skin)
   table.extract(skin, "blush_palette_id")   --Unused by VORP
   table.extract(skin, "shadows_tx_id")      --Unused by VORP
   table.extract(skin, "lipsticks_tx_id")    --Unused by VORP
+  table.extract(skin, "Whistle")            --not applied on skin
 
   return standard
 end
