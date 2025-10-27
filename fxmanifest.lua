@@ -1,6 +1,6 @@
 author "JUMP ON studios : https://jumpon-studios.com"
 documentation "https://docs.jumpon-studios.com"
-version "2.4.1"
+version "2.4.2"
 package_id "1"
 
 fx_version "cerulean"
@@ -9,6 +9,8 @@ rdr3_warning "I acknowledge that this is a prerelease build of RedM, and I am aw
 
 game "rdr3"
 lua54 "yes"
+
+
 
 files {
 	"init.lua",
@@ -40,6 +42,8 @@ files {
 	"nui/**/**.mp3",
 	"nui/**/**.gif",
 }
+
+ui_page "nui://jo_libs/nui/index.html"
 
 shared_scripts {
 	"init.lua"
