@@ -519,7 +519,7 @@ function MenuClass:sort(first, last)
     self.items[i].index = i
     if self.items[i].isCurrentIndex then
       self.currentIndex = i
-      self.items[i].iscurrentIndex = nil
+      self.items[i].isCurrentIndex = nil
     end
   end
 end
