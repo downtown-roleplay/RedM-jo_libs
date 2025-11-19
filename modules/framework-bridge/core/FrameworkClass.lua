@@ -5,7 +5,7 @@
 local Core = exports.core:GetCoreObject()
 
 
-local inventoriesCreated = {}
+local inventories = {}
 local fromFrameworkToStandard = {
   skin_tone = { 1, 4, 3, 5, 2, 6 },
   heads = {
@@ -1180,4 +1180,40 @@ function jo.framework:onCharacterSelected(cb)
   AddEventHandler("characterLoaded", function(characterData)
     cb(characterData.playerId)
   end)
+end
+
+---@param invName string unique ID of the inventory
+---@param name string name of the inventory
+---@param invConfig table Configuration of the inventory
+---@return boolean
+function jo.framework:createInventory(invName, name, invConfig)
+  local inventoryConfig = {
+    id = invName,
+    name = name,
+    slots = invConfig.maxSlots,
+    maxWeight = invConfig.maxWeight * 1000,
+  }
+  inventories[invName] = inventoryConfig
+  exports.inventory:RegisterStash(inventoryConfig.id, inventoryConfig.name, inventoryConfig.slots, inventoryConfig.maxWeight)
+  return true
+end
+
+---@param invName string unique ID of the inventory
+---@return boolean
+function jo.framework:removeInventory(invName)
+  return exports.inventory:RemoveInventory(invName)
+end
+
+---@param source integer sourceIdentifier
+---@param invName string name of the inventory
+---@return boolean
+function jo.framework:openInventory(source, invName)
+  TriggerClientEvent("ox_inventory:openInventory", source, "stash", { id = invName })
+  return true
+end
+
+---@param invId string name of the inventory
+---@return table
+function jo.framework:getItemsFromInventory(invId)
+  return exports.inventory:GetInventoryItems(invId)
 end
