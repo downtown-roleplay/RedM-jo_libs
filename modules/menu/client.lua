@@ -772,6 +772,12 @@ function jo.menu.get(id)
   return menus[id]
 end
 
+--- Get all menu instances
+---@return MenuClass[]
+function jo.menu.getAll()
+  return menus
+end
+
 --- Set or replace a menu instance
 ---@param id string (The menu ID)
 ---@param menu MenuClass (The menu object to set)
