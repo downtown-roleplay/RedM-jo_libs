@@ -332,11 +332,12 @@ local function getHeadHash(sex, skin)
   if skin.HeadType == 0 then
     return skin.HeadType, 1, 1
   end
+  local headType = math.toSigned(skin.HeadType)
   for skinTint = 1, 6 do
     for index = 1, 28 do
       local value = jo.component.getHeadFromSkinTone(sex, index, skinTint)
       local hash = joaat(value)
-      if (skin.HeadType == hash) then
+      if (headType == hash) then
         dprint("getHeadHash", value, skinTint, index)
         return hash, skinTint, index
       end
