@@ -1143,6 +1143,7 @@ function jo.framework:updateUserClothesInternal(source, clothes)
   MySQL.scalar("SELECT clothes FROM characters_outfit WHERE ownerId=? ", { character.id }, function(oldClothes)
     local decoded = UnJson(oldClothes)
     table.merge(decoded, clothes)
+    decoded = jo.framework:standardizeClothes(decoded)
     MySQL.update("UPDATE characters_outfit SET clothes=? WHERE ownerId=?", { json.encode(decoded), character.id })
   end)
 end
