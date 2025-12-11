@@ -259,6 +259,11 @@ function MenuItem:deleteValue(keys)
   menu:deleteValue(keys)
 end
 
+--- Delete the item from menu
+function MenuItem:remove()
+  self:getParentMenu():deleteItem(self.index)
+end
+
 --- Get the parent menu of the item
 ---@return MenuClass (The parent menu)
 function MenuItem:getParentMenu()
@@ -513,7 +518,7 @@ function MenuClass:sort(first, last)
     self.items[i].index = i
     if self.items[i].isCurrentIndex then
       self.currentIndex = i
-      self.items[i].iscurrentIndex = nil
+      self.items[i].isCurrentIndex = nil
     end
   end
 end
@@ -701,6 +706,8 @@ function jo.menu.show(show, keepInput, hideRadar, animation, hideCursor)
     animation = animation == nil and true or animation
     hideCursor = hideCursor or false
 
+    LocalPlayer.state.menuOpen = show
+    
     nuiShow = show
     if timeoutClose then
       timeoutClose:clear()
@@ -762,6 +769,12 @@ end
 ---@return MenuClass (The menu object)
 function jo.menu.get(id)
   return menus[id]
+end
+
+--- Get all menu instances
+---@return MenuClass[]
+function jo.menu.getAll()
+  return menus
 end
 
 --- Set or replace a menu instance
