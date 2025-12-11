@@ -673,7 +673,6 @@ function jo.component.refreshPed(ped)
   refreshPed(ped)
 end
 
-
 --- A function to wait the refresh of ped
 --- @param ped integer (The entity ID)
 function jo.component.waitPedLoaded(ped)
@@ -935,11 +934,9 @@ function jo.component.applySkin(ped, skin)
 
   dprint("apply outfit")
   if skin.bodyType then
-    dprint("apply bodyType", skin.bodyType)
     EquipMetaPedOutfit(ped, skin.bodyType)
   end
   if skin.bodyWeight then
-    dprint("apply bodyWeight", skin.bodyWeight)
     EquipMetaPedOutfit(ped, skin.bodyWeight)
   end
 
@@ -985,7 +982,6 @@ function jo.component.applySkin(ped, skin)
       overlay = table.merge(default, overlay)
     end
   end
-
   if jo.isModuleLoaded("pedTexture", false) and NetworkGetEntityIsNetworked(ped) then
     jo.pedTexture.overwriteBodyPart(ped, "heads", skin.overlays, true)
   end

@@ -259,11 +259,6 @@ function MenuItem:deleteValue(keys)
   menu:deleteValue(keys)
 end
 
---- Delete the item from menu
-function MenuItem:remove()
-  self:getParentMenu():deleteItem(self.index)
-end
-
 --- Get the parent menu of the item
 ---@return MenuClass (The parent menu)
 function MenuItem:getParentMenu()
@@ -422,7 +417,6 @@ function MenuClass:deleteItem(index)
   end
 end
 
-
 --- Refresh all the menu without changing the current state
 --- Used when you want rebuild the menu
 function MenuClass:refresh()
@@ -519,7 +513,7 @@ function MenuClass:sort(first, last)
     self.items[i].index = i
     if self.items[i].isCurrentIndex then
       self.currentIndex = i
-      self.items[i].isCurrentIndex = nil
+      self.items[i].iscurrentIndex = nil
     end
   end
 end
@@ -707,8 +701,6 @@ function jo.menu.show(show, keepInput, hideRadar, animation, hideCursor)
     animation = animation == nil and true or animation
     hideCursor = hideCursor or false
 
-    LocalPlayer.state.menuOpen = show
-    
     nuiShow = show
     if timeoutClose then
       timeoutClose:clear()
@@ -770,12 +762,6 @@ end
 ---@return MenuClass (The menu object)
 function jo.menu.get(id)
   return menus[id]
-end
-
---- Get all menu instances
----@return MenuClass[]
-function jo.menu.getAll()
-  return menus
 end
 
 --- Set or replace a menu instance
@@ -850,7 +836,6 @@ function jo.menu.softHide(cb, animation)
   SendNUIMessage({ event = "updateShow", show = true, cancelAnimation = not animation })
 end
 
-
 --- A function to know if the menu is the current one
 ---@param id string (The menu id)
 ---@return boolean
@@ -893,6 +878,7 @@ end
 function jo.menu.hideLoader()
   jo.menu.displayLoader(false)
 end
+
 -------------
 -- NUI
 -------------
