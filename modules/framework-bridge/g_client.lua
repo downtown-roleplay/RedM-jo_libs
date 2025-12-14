@@ -52,3 +52,19 @@ RegisterNetEvent("jo_libs:client:applyClothes", function(ped, clothes)
     jo.hook.doActions("jo_libs:applyClothes:after", ped, clothes)
   end)
 end)
+
+RegisterNetEvent("jo_libs:client:applyOverlays", function(ped, overlays)
+  if not (jo.isModuleLoaded("component", false)) then
+    return
+  end
+  ped = ped or PlayerPedId()
+  jo.timeout.delay("jo_libs:client:applyOverlays:" .. ped, 100, function()
+    jo.hook.doActions("jo_libs:applyOverlays:before", ped, overlays)
+
+    jo.pedTexture.overwriteBodyPart(ped, "heads", overlays, true)
+
+    jo.component.refreshPed(ped)
+
+    jo.hook.doActions("jo_libs:applyOverlays:after", ped, overlays)
+  end)
+end)
