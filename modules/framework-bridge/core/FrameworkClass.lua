@@ -1130,10 +1130,12 @@ function jo.framework:getUserClothesInternal(source)
   if not character then return {} end
 
   local clothes = MySQL.scalar.await("SELECT clothes FROM characters_outfit WHERE ownerId=?", { character.id })
-  
+
+  if not clothes then return {} end
+
   local decoded = UnJson(clothes)
 
-  return decoded
+  return type(decoded) == "table" and decoded or {}
 end
 
 function jo.framework:updateUserClothesInternal(source, clothes)
@@ -1141,7 +1143,7 @@ function jo.framework:updateUserClothesInternal(source, clothes)
   if not character then return {} end
 
   MySQL.scalar("SELECT clothes FROM characters_outfit WHERE ownerId=? ", { character.id }, function(oldClothes)
-    local decoded = UnJson(oldClothes)
+    local decoded = type(UnJson(oldClothes)) == "table" and UnJson(oldClothes) or {}
     table.merge(decoded, clothes)
     decoded = jo.framework:standardizeClothes(decoded)
     MySQL.update("UPDATE characters_outfit SET clothes=? WHERE ownerId=?", { json.encode(decoded), character.id })
@@ -1151,10 +1153,15 @@ end
 
 function jo.framework:getUserSkinInternal(source)
   local character = Core.GetCharacterFromPlayerId(source)
+  if not character then return {} end
 
   local skin = MySQL.scalar.await("SELECT skin FROM characters_appearance WHERE characterId=?", { character.id })
 
-  return UnJson(skin)
+  if not skin then return {} end
+
+  local decoded = UnJson(skin)
+
+  return type(decoded) == "table" and decoded or {}
 end
 
 function jo.framework:updateUserSkinInternal(source, skin, overwrite)
@@ -1171,7 +1178,7 @@ function jo.framework:updateUserSkinInternal(source, skin, overwrite)
     MySQL.update("UPDATE characters_appearance SET skin=? WHERE characterId=?", { json.encode(skin), character.id })
   else
     MySQL.scalar("SELECT skin FROM characters_appearance WHERE characterId=?", { character.id }, function(oldSkin)
-      local decoded = UnJson(oldSkin)
+      local decoded = type(UnJson(oldSkin)) == "table" and UnJson(oldSkin) or {}
       table.merge(decoded, skin)
       MySQL.update("UPDATE characters_appearance SET skin=? WHERE characterId=?", { json.encode(decoded), character.id })
     end)
