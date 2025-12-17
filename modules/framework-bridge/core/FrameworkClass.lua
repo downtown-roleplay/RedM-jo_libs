@@ -1144,8 +1144,8 @@ function jo.framework:updateUserClothesInternal(source, clothes)
   if not character then return {} end
 
   MySQL.scalar("SELECT clothes FROM characters_outfit WHERE ownerId=? ", { character.id }, function(oldClothes)
-    local decoded = type(UnJson(oldClothes)) == "table" and UnJson(oldClothes) or {}
-    table.merge(decoded, clothes)
+    local decoded = UnJson(oldClothes)
+    table.merge_old(decoded, clothes)
     MySQL.update("UPDATE characters_outfit SET clothes=? WHERE ownerId=?", { json.encode(decoded), character.id })
   end)
 end
