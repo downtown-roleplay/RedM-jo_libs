@@ -295,16 +295,16 @@ local function getFrameworkValueFromStandard(category, data)
 end
 
 function jo.framework:canUseItem(source, item, amount, meta, remove)
-	local character = Core.GetCharacterFromPlayerId(source)
-	local itemData = exports.inventory:GetItem(source, item, nil, false)
-	if itemData and itemData.count >= amount then
-		if type(remove) ~= "table" then
-			character.removeInventoryItem(item, amount)
-        else
-            Core.RemoveDurabilityItem(source, item, remove)
-		end
-		return true
-	end
+  local character = Core.GetCharacterFromPlayerId(source)
+  local itemData = exports.inventory:GetItem(source, item, nil, false)
+  if itemData and itemData.count >= amount then
+    if type(remove) ~= "table" then
+      character.removeInventoryItem(item, amount)
+    else
+      Core.RemoveDurabilityItem(source, item, remove)
+    end
+    return true
+  end
 end
 
 function jo.framework:registerUseItem(item, closeAfterUsed, callback)
