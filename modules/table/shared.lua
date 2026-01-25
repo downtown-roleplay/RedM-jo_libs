@@ -47,25 +47,6 @@ function table.merge(...)
   return t1
 end
 
----@param t1 table (The main table)
----@param t2 table (The table to merge)
----@return table (The merged table. If the same key exists in both tables, only the value of t2 is kept)
-function table.merge_old(t1, t2)
-  t1 = t1 or {}
-  if not t2 then return t1 end
-  for k, v in pairs(t2 or {}) do
-    if type(v) == "table" then
-      if type(t1[k] or false) == "table" then
-        table.merge_old(t1[k] or {}, t2[k] or {})
-      else
-        t1[k] = v
-      end
-    else
-      t1[k] = v
-    end
-  end
-  return t1
-end
 --- Merges the values of the second table sequentially into the first table.
 ---@param ... table (The tables to merge)
 ---@return table (The merged table with values from t2 added at the end of t1)
