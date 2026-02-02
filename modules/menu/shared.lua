@@ -166,6 +166,10 @@ function jo.menu.formatPrices(prices)
       size += 1
     end
 
+    if #sanitized == 0 then
+      sanitized = { { money = 0 } }
+    end
+
     formattedPrices[i] = sanitized
   end
 
@@ -183,9 +187,10 @@ end
 ---@param ... table (The prices to merge)
 ---@return table (The merged prices)
 function jo.menu.mergePrices(...)
-  local prices = table.copy({ ... })
+  prices = { ... }
+  prices = table.copy(prices)
   prices.operator = "and"
-  return jo.menu.formatPrices(prices)
+  return jo.menu.formatPrices(prices)[1]
 end
 
 local function runTests()

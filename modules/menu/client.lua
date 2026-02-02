@@ -134,7 +134,7 @@ end
 
 local function missingMenu(id)
   if not menuCreators[id] then
-    return eprint(("The menu is missing: %s"):format(id))
+    return eprint("The menu is missing: %s", id)
   end
   CreateThreadNow(menuCreators[id])
 end
@@ -416,7 +416,6 @@ function MenuClass:deleteItem(index)
     })
   end
 end
-
 
 --- Refresh all the menu without changing the current state
 --- Used when you want rebuild the menu
@@ -845,7 +844,6 @@ function jo.menu.softHide(cb, animation)
   SendNUIMessage({ event = "updateShow", show = true, cancelAnimation = not animation })
 end
 
-
 --- A function to know if the menu is the current one
 ---@param id string (The menu id)
 ---@return boolean
@@ -888,6 +886,7 @@ end
 function jo.menu.hideLoader()
   jo.menu.displayLoader(false)
 end
+
 -------------
 -- NUI
 -------------

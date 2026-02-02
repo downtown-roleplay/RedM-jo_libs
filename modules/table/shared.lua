@@ -23,10 +23,15 @@ function table.copy(t)
 end
 
 --- Merges multiple tables together.
+---@param deepMerge? boolean (Whether to deep merge tables)
 ---@param ... table (The tables to merge)
 ---@return table (The merged table. If the same key exists in both tables, only the value of t2 is kept)
-function table.merge(...)
+function table.merge(deepMerge, ...)
   local args = { ... }
+  if type(deepMerge) ~= "boolean" then
+    table.insert(args, 1, deepMerge)
+    deepMerge = true
+  end
   if #args < 2 then return args[1] end
 
   local t1 = args[1]
@@ -34,8 +39,8 @@ function table.merge(...)
     local t2 = args[t]
     for k, v in pairs(t2 or {}) do
       if type(v) == "table" then
-        if type(t1[k] or false) == "table" then
-          table.merge(t1[k] or {}, t2[k] or {})
+        if type(t1[k] or false) == "table" and deepMerge then
+          table.merge(deepMerge, t1[k] or {}, t2[k] or {})
         else
           t1[k] = v
         end
@@ -68,10 +73,8 @@ end
 ---@param t table (The table to check)
 ---@return boolean (Returns true if the table is empty)
 function table.isEmpty(t)
-  for _ in pairs(t or {}) do
-    return false
-  end
-  return true
+  local _type = table.type(t)
+  return (_type == nil) or (_type == "empty")
 end
 
 --- Counts the number of values inside a table.
@@ -111,7 +114,7 @@ end
 
 --- Creates a new table populated with the results of calling a function on every element.
 ---@param t table (The table to map)
----@param func function (A function to transform each element. Called with (element, key, originalTable))
+---@param func function|any (A function to transform each element. Called with (element, key, originalTable))
 ---@return table (The new mapped table)
 function table.map(t, func)
   local new_table = {}
@@ -126,9 +129,26 @@ end
 ---@param func function (A function to test each element. Should return `true` when found. Called with (element, key, originalTable))
 ---@return any,any (The found value or `false` if not found , The key of the found value)
 function table.find(t, func)
-  for i, v in pairs(t or {}) do
-    if func(v, i, t) then
-      return v, i
+  if not t then return false end
+  if type(t) ~= "table" then return false end
+  if type(func) ~= "function" then
+    local valueToFind = func
+    func = function(value, _, _)
+      return valueToFind == value
+    end
+  end
+  if table.type(t) == "empty" then return false end
+  if table.type(t) == "array" then
+    for i = 1, #t do
+      if func(t[i], i, t) then
+        return t[i], i
+      end
+    end
+  else
+    for i, v in pairs(t or {}) do
+      if func(v, i, t) then
+        return v, i
+      end
     end
   end
   return false
