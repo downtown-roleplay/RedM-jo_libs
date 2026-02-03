@@ -1129,13 +1129,29 @@ function jo.framework:getUserClothesInternal(source)
   local character = Core.GetCharacterFromPlayerId(source)
   if not character then return {} end
 
-  local clothes = MySQL.scalar.await("SELECT clothes FROM characters_outfit WHERE ownerId=?", { character.id })
+  local result = MySQL.single.await(
+    "SELECT clothes, tints FROM characters_outfit WHERE ownerId=?",
+    { character.id }
+  )
 
-  if not clothes then return {} end
+  if not result then return {} end
 
-  local decoded = UnJson(clothes)
+  local clothes = UnJson(result.clothes) or {}
+  local clothesTints = UnJson(result.tints) or {}
 
-  return type(decoded) == "table" and decoded or {}
+  for category, data in pairs(clothesTints) do
+    for hash, tintData in pairs(data) do
+      if tonumber(clothes[category]) == tonumber(hash) then
+        clothes[category] = {
+          hash = clothes[category]
+        }
+
+        table.merge(clothes[category], tintData)
+      end
+    end
+  end
+
+  return clothes
 end
 
 function jo.framework:updateUserClothesInternal(source, clothes)
@@ -1176,7 +1192,7 @@ function jo.framework:updateUserClothesInternal(source, clothes)
   end
 
 
-  MySQL.update("UPDATE characters_outfit SET clothes=? WHERE ownerId=?", { json.encode(newClothes), character.id })
+  MySQL.update("UPDATE characters_outfit SET clothes=?,tints=? WHERE ownerId=?", { json.encode(newClothes), json.encode(tints), character.id })
 end
 
 function jo.framework:getUserSkinInternal(source)
