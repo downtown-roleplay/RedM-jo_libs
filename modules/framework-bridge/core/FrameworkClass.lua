@@ -12,12 +12,12 @@ local fromFrameworkToStandard = {
     mp_male = { [16] = 18, [17] = 21, [18] = 22, [19] = 25, [20] = 28 },
     mp_female = { [17] = 20, [18] = 22, [19] = 27, [20] = 28 }
   },
-  bodies = { 
+  bodies = {
     -1241887289,
     61606861,
     -369348190,
-	  -20262001,
-	  32611963,
+    -20262001,
+    32611963,
   },
   waist = {
     -2045421226,
@@ -309,14 +309,14 @@ end
 
 function jo.framework:registerUseItem(item, closeAfterUsed, callback)
   Core.RegisterUsableItem(item, function(source, item)
-      local character = Core.GetCharacterFromPlayerId(source)
-      if character then
-          if closeAfterUsed then
-              character.triggerEvent('ox_inventory:closeInventory')
-          end
-
-          callback(source, item)
+    local character = Core.GetCharacterFromPlayerId(source)
+    if character then
+      if closeAfterUsed then
+        character.triggerEvent('ox_inventory:closeInventory')
       end
+
+      callback(source, item)
+    end
   end)
 end
 
@@ -1139,17 +1139,45 @@ function jo.framework:getUserClothesInternal(source)
 end
 
 function jo.framework:updateUserClothesInternal(source, clothes)
-  
   local character = Core.GetCharacterFromPlayerId(source)
   if not character then return {} end
 
-  MySQL.scalar("SELECT clothes FROM characters_outfit WHERE ownerId=? ", { character.id }, function(oldClothes)
-    local decoded = UnJson(oldClothes)
-    table.merge_old(decoded, clothes)
-    MySQL.update("UPDATE characters_outfit SET clothes=? WHERE ownerId=?", { json.encode(decoded), character.id })
-  end)
-end
+  local newClothes = {}
+  for category, value in pairs(clothes) do
+    newClothes[category] = table.copy(value)
+    if type(value) == "table" then
+      if not value.drawable and not value.wearableState then
+        newClothes[category].comp = GetValue(value?.hash, 0)
+      else
+        newClothes[category].comp = value
+      end
+    end
+  end
+  local user = self.UserClass:get(source)
+  local tints = UnJson(user.data.comptTints)
+  for category, value in pairs(clothes) do
+    if type(value) == "table" and GetValue(value?.hash, 0) ~= 0 then
+      local tint = {
+        state = value.state
+      }
+      if value.palette and value.palette ~= 0 then
+        tint.tint0 = GetValue(value.tint0, 0)
+        tint.tint1 = GetValue(value.tint1, 0)
+        tint.tint2 = GetValue(value.tint2, 0)
+        tint.palette = GetValue(value.palette, 0)
+      end
+      tints[category] = { [value.hash] = tint }
+    end
+  end
+  for _, value in pairs(tints) do
+    if table.count(value) == 0 then
+      value = nil
+    end
+  end
 
+
+  MySQL.update("UPDATE characters_outfit SET clothes=? WHERE ownerId=?", { json.encode(newClothes), character.id })
+end
 
 function jo.framework:getUserSkinInternal(source)
   local character = Core.GetCharacterFromPlayerId(source)
@@ -1166,7 +1194,7 @@ end
 
 function jo.framework:updateUserSkinInternal(source, skin, overwrite)
   local character = Core.GetCharacterFromPlayerId(source)
-  
+
   for cat, data in pairs(skin) do
     if cat == "Teeth" then
       self:updateUserClothesInternal(source, { Teeth = { hash = self:extractComponentHashIfAlone(data) } })
@@ -1174,7 +1202,7 @@ function jo.framework:updateUserSkinInternal(source, skin, overwrite)
     end
   end
 
-  if overwrite then
+  if overwrite then 
     MySQL.update("UPDATE characters_appearance SET skin=? WHERE characterId=?", { json.encode(skin), character.id })
   else
     MySQL.scalar("SELECT skin FROM characters_appearance WHERE characterId=?", { character.id }, function(oldSkin)
@@ -1203,7 +1231,8 @@ function jo.framework:createInventory(invName, name, invConfig)
     maxWeight = invConfig.maxWeight * 1000,
   }
   inventories[invName] = inventoryConfig
-  exports.inventory:RegisterStash(inventoryConfig.id, inventoryConfig.name, inventoryConfig.slots, inventoryConfig.maxWeight)
+  exports.inventory:RegisterStash(inventoryConfig.id, inventoryConfig.name, inventoryConfig.slots,
+    inventoryConfig.maxWeight)
   return true
 end
 
