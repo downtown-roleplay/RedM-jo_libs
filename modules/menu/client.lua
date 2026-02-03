@@ -134,7 +134,7 @@ end
 
 local function missingMenu(id)
   if not menuCreators[id] then
-    return eprint(("The menu is missing: %s"):format(id))
+    return eprint("The menu is missing: %s", id)
   end
   CreateThreadNow(menuCreators[id])
 end
@@ -257,11 +257,6 @@ function MenuItem:deleteValue(keys)
   table.insert(keys, 1, self.index)
   table.insert(keys, 1, "items")
   menu:deleteValue(keys)
-end
-
---- Delete the item from menu
-function MenuItem:remove()
-  self:getParentMenu():deleteItem(self.index)
 end
 
 --- Get the parent menu of the item
