@@ -4,10 +4,9 @@ AddEventHandler("rdr_creator:SkinLoaded", function(skin, ped, clothes)
   TriggerServerEvent("jo_libs:server:applySkinAndClothes", ped, skin, clothes)
 end)
 
-RegisterNetEvent("rdr_clothes_store:ApplyClothes")
-AddEventHandler("rdr_clothes_store:ApplyClothes", function(clothes, ped, skin)
+RegisterNetEvent("rdr_creator:ApplyClothes", function(clothes, ped)
   ped = ped or PlayerPedId()
-  TriggerServerEvent("jo_libs:server:applySkinAndClothes", ped, skin, clothes)
+  TriggerServerEvent("jo_libs:server:applyClothes", ped, clothes)
 end)
 
 function jo.framework:getInventoryItems()
