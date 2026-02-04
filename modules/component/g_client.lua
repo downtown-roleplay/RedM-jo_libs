@@ -233,6 +233,14 @@ end
 ---@param state string|integer
 local function updateComponentWearableState(ped, category, hash, state)
   category = jo.component.getCategoryNameFromHash(category)
+  if state == 0 then
+    Entity(ped).state:set("wearableState:" .. category, nil)
+    if hash then
+      jo.component.remove(ped, category)
+      jo.component.apply(ped, category, hash)
+    end
+    return
+  end
   state = GetHashFromString(state)
   Entity(ped).state:set("wearableState:" .. category, state)
   UpdateShopItemWearableState(ped, type(hash) == "table" and hash.hash or hash, state)
