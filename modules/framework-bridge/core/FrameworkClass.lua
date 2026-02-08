@@ -1154,11 +1154,20 @@ function jo.framework:getUserClothesInternal(source)
   return clothes
 end
 
-function jo.framework:updateUserClothesInternal(source, clothes)
+function jo.framework:updateUserClothesInternal(source, clothes, overwrite)
   local character = Core.GetCharacterFromPlayerId(source)
   if not character then return {} end
 
   local newClothes = {}
+  if overwrite then
+    newClothes = self:getUserClothes(source)
+    newClothes.bodies_upper = nil
+    newClothes.bodies_lower = nil
+    for _, data in pairs(newClothes) do
+      data.hash = 0
+    end
+    newClothes = self:revertClothes(newClothes)
+  end
   for category, value in pairs(clothes) do
     newClothes[category] = table.copy(value)
     if type(value) == "table" then
@@ -1170,7 +1179,7 @@ function jo.framework:updateUserClothesInternal(source, clothes)
     end
   end
   local user = self.UserClass:get(source)
-  local tints = UnJson(user.data.comptTints)
+  local tints = overwrite and {} or UnJson(user.data.comptTints)
   for category, value in pairs(clothes) do
     if type(value) == "table" and GetValue(value?.hash, 0) ~= 0 then
       local tint = {
@@ -1190,7 +1199,6 @@ function jo.framework:updateUserClothesInternal(source, clothes)
       value = nil
     end
   end
-
 
   MySQL.update("UPDATE characters_outfit SET clothes=?,tints=? WHERE ownerId=?", { json.encode(newClothes), json.encode(tints), character.id })
 end
