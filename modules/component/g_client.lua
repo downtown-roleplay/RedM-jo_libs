@@ -174,6 +174,15 @@ function jo.component.getBaseLayer(ped, hash, inTable)
   if normal == 0 then normal = nil end
   if material == 0 then material = nil end
   if palette == 0 then palette = nil end
+  if not palette then
+    local shopItemData = jo.component.getShopItemTint(hash)
+    if shopItemData then
+      palette = shopItemData.p
+      tint0 = shopItemData.t0
+      tint1 = shopItemData.t1
+      tint2 = shopItemData.t2
+    end
+  end
   if inTable then
     return {
       drawable = drawable,
@@ -719,6 +728,7 @@ end
 --- @param data table (The component data, see the structure in [jo.component.apply()](#jo-component-apply))
 --- @param state integer|string (The wearable state to apply on the component <br>  The list of wearable state can be find in the `jo_libs>module>component>client.lua` file `line 76`)
 function jo.component.setWearableState(ped, category, data, state)
+  initCachePedComponents(ped)
   local stateHash = GetHashFromString(state)
   local categoryName = jo.component.getCategoryNameFromHash(category)
   local categoryHash = jo.component.getCategoryHash(category)
@@ -775,7 +785,7 @@ function jo.component.setWearableState(ped, category, data, state)
   if oldComp.palette ~= 0 then
     SetTextureOutfitTints(ped, category, oldComp.palette, oldComp.tint0, oldComp.tint1, oldComp.tint2)
   end
-  refreshPed(ped)
+  reapplyCached(ped)
 end
 
 --- Get the wearable state of a category
@@ -1033,8 +1043,3 @@ end
 -------------
 -- END CONVERT HASH
 -------------
-
-function jo.component.isCategoryAClothes(category)
-  category = jo.component.getCategoryHash(category)
-  return jo.component.data.clothesCategories[category] ~= nil
-end

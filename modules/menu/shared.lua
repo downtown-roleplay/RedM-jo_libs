@@ -181,7 +181,7 @@ end
 ---@param price table|integer|number (The price to check)
 ---@return boolean (Return `true` if the price is free)
 function jo.menu.isPriceFree(price)
-  return type(price) == "table" and #price == 1 and (price[1].money == 0 or price[1][1].money == 0)
+  return type(price) == "table" and #price == 1 and (price[1]?.money == 0 or price[1][1]?.money == 0)
 end
 
 --- Merge prices

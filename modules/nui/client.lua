@@ -43,3 +43,38 @@ end
 function jo.nui.isLoaded(uiName)
   return nuiLoaded[uiName] and true or false
 end
+
+--- A function to know if the mouse is hovering over a NUI
+--- The NUI has to be start with the nui module to be detected
+---@return boolean (`true` if the mouse is hovering over a NUI)
+local hovering
+local function isHovering()
+  hovering = nil
+  SendNUIMessage({
+    action = "jo_nui_is_hovering"
+  })
+  while hovering == nil do Wait(0) end
+  return hovering
+end
+
+RegisterNUICallback("jo_nui_is_hovering", function(data, cb)
+  hovering = data.hovering
+  cb("ok")
+end)
+
+function jo.nui.isHovering(global)
+  global = GetValue(global, true)
+  if not global then
+    return isHovering()
+  end
+  return exports.jo_libs:jo_nui_is_global_hovering()
+end
+
+exports("jo_nui_is_hovering", function()
+  return isHovering()
+end)
+
+
+jo.ready(function()
+  exports.jo_libs:jo_nui_init()
+end)

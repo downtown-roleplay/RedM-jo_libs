@@ -80,7 +80,7 @@ end
 
 RegisterServerEvent("jo_libs:triggerCallback", function(name, requestId, fromRessource, ...)
   local source = source
-  if not doesCallbackExist(name) then return eprint("Event: No server callback for:", name) end
+  if not doesCallbackExist(name) then return eprint("Event: No server callback for:", name, fromRessource) end
 
   local trigger = registeredCallback[name].latent and jo.emit.triggerClient.latent or TriggerClientEvent
 

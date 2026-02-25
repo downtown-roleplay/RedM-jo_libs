@@ -131,7 +131,7 @@ local categoryNotClothes = {
   bodies_lower = true,
   bodies_upper = true,
   eyes = true,
-  neckerchiefs = true
+  -- neckerchiefs = true
 }
 jo.component.data.pedClothes = table.filter(jo.component.data.pedCategories, function(cat) return not categoryNotClothes[cat] end)
 jo.component.data.clothesCategories = {}
@@ -376,6 +376,26 @@ function jo.component.getFullHorseComponentList()
   return horseComponentsData
 end
 
+local tintsData = nil
+--- A function to get the list of tints
+---@return table tintsData
+function jo.component.getFullShopItemTintsList()
+  if tintsData then return tintsData end
+  tintsData = jo.file.load("component.data.tintShopItems")
+  return tintsData
+end
+
+--- A function to get the tint of a shop itemSet
+---@param shopItem? integer|string (The shop item name)
+---@return table tintsData
+function jo.component.getShopItemTint(shopItem)
+  shopItem = GetHashFromString(shopItem)
+  if not tintsData then
+    jo.component.getFullShopItemTintsList()
+  end
+  return tintsData[shopItem]
+end
+
 -------------
 -- END COMPONENT LISTS
 -------------
@@ -493,6 +513,11 @@ function jo.component.getTeethFromIndex(ped, index)
     sex = IsPedMale(ped) and "M" or "F"
   end
   return ("CLOTHING_ITEM_%s_TEETH_%03d"):format(sex, index or 1)
+end
+
+function jo.component.isCategoryAClothes(category)
+  category = jo.component.getCategoryHash(category)
+  return jo.component.data.clothesCategories[category] ~= nil
 end
 
 -------------

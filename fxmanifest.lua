@@ -1,6 +1,6 @@
 author "JUMP ON studios : https://jumpon-studios.com"
 documentation "https://docs.jumpon-studios.com"
-version "2.6.3"
+version "2.7.0"
 package_id "1"
 
 fx_version "cerulean"
@@ -9,8 +9,6 @@ rdr3_warning "I acknowledge that this is a prerelease build of RedM, and I am aw
 
 game "rdr3"
 lua54 "yes"
-
-
 
 files {
 	"init.lua",
@@ -21,6 +19,7 @@ files {
 	"modules/component/horseComponents.lua",
 	"modules/component/data/horseComponents.lua",
 	"modules/component/data/playerComponents.lua",
+	"modules/component/data/tintShopItems.lua",
 	"modules/game-events/data.lua",
 	"modules/raw-keys/vk_azerty.lua",
 	"modules/raw-keys/vk_qwerty.lua",

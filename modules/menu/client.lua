@@ -513,7 +513,7 @@ function MenuClass:sort(first, last)
     self.items[i].index = i
     if self.items[i].isCurrentIndex then
       self.currentIndex = i
-      self.items[i].isCurrentIndex = nil
+      self.items[i].iscurrentIndex = nil
     end
   end
 end
@@ -573,6 +573,7 @@ end
 --- data.numberOnLine? integer (Only for tile menu, Maximum number of items visibles at the same time <br> default : `4`)
 --- data.numberLineOnScreen? integer (Only for tile menu, Maximum number of lines visibles at the same time <br> default : `6`)
 --- data.distanceToClose float (Distance at which the menu will self close if the player is moving away <br> default: `false` )
+--- data.displayBackButton boolean (Whether to display the back button <br> default: `false` )
 --- data.onEnter? function (Fired when the menu is opened)
 --- data.onBack? function (Fired when the backspace/Escape is pressed)
 --- data.onExit? function (Fired when the menu is exited)
@@ -701,8 +702,6 @@ function jo.menu.show(show, keepInput, hideRadar, animation, hideCursor)
     animation = animation == nil and true or animation
     hideCursor = hideCursor or false
 
-    LocalPlayer.state.menuOpen = show
-    
     nuiShow = show
     if timeoutClose then
       timeoutClose:clear()
@@ -764,12 +763,6 @@ end
 ---@return MenuClass (The menu object)
 function jo.menu.get(id)
   return menus[id]
-end
-
---- Get all menu instances
----@return MenuClass[]
-function jo.menu.getAll()
-  return menus
 end
 
 --- Set or replace a menu instance
