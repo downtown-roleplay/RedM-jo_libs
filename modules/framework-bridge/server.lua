@@ -1,6 +1,7 @@
 jo.require("table")
 jo.require("string")
 jo.require("math")
+jo.require("callback")
 
 -- -----------
 -- LOAD FRAMEWORK
@@ -88,6 +89,9 @@ function jo.framework:getUserIdentifiers(source)
   end
   return user:getIdentifiers()
 end
+jo.callback.register(jo.resourceName .. ":server:framework:getPlayerIdentifiers", function(source, playerId)
+  return jo.framework:getUserIdentifiers(playerId or source)
+end)
 
 --- Returns the current job assigned to a player
 ---@param source integer (The source ID of the player)
