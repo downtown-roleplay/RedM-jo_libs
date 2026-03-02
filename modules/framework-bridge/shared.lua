@@ -91,12 +91,6 @@ local supportedFrameworks = {
     folder = "frp",
     resources = { "frp_core" }
   },
-  {
-    id = "core",
-    name = "Core Framework",
-    folder = "core",
-    resources = { "core" },
-  }
 }
 
 local function extractResourceData(str)
@@ -237,3 +231,8 @@ function jo.framework:getItemData(item)
   end
   return jo.framework.inventoryItems[item]
 end
+
+-------------
+-- Shortcut
+-------------
+jo.fw = jo.framework
