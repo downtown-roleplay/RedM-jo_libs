@@ -37,16 +37,16 @@ function jo.framework.UserClass:getMoney(moneyType)
   local gold = user.getGold()
 
   local resultTypes = {
-      [0] = money,
-      [1] = gold,
+    [0] = money,
+    [1] = gold,
   }
 
   return resultTypes[moneyType] or 0
 end
 
-function jo.framework.UserClass:addMoney(source, amount, moneyType)
-  local character = Core.GetCharacterFromPlayerId(source)
-  local user = Core.GetUserFromPlayerId(source)
+function jo.framework.UserClass:addMoney(amount, moneyType)
+  local character = Core.GetCharacterFromPlayerId(self.source)
+  local user = Core.GetUserFromPlayerId(self.source)
   if moneyType == 0 then
     return character.addMoney(amount) and true or false
   elseif moneyType == 1 then
@@ -68,19 +68,19 @@ end
 
 function jo.framework.UserClass:getIdentifiers()
   local character = Core.GetCharacterFromPlayerId(self.source)
-    local user = Core.GetUserFromPlayerId(self.source)
+  local user = Core.GetUserFromPlayerId(self.source)
 
-    return {
-        id = tonumber(user?.id),
-        charid = tonumber(character?.id),
-        identifier = tostring(character?.identifier)
-    }
+  return {
+    id = tonumber(user?.id),
+    charid = tonumber(character?.id),
+    identifier = tostring(character?.identifier)
+  }
 end
 
 function jo.framework.UserClass:getJob()
   local character = Core.GetCharacterFromPlayerId(self.source)
   local jobs = table.map(character?.roles, function(v, i)
-      return v.group.name
+    return v.group.name
   end)
 
   return jobs
