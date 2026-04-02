@@ -2,123 +2,150 @@ jo.createModule("promptNui")
 jo.require("table")
 jo.require("raw-keys")
 
-local clockStart = GetGameTimer()
 local NativeSendNUIMessage = SendNUIMessage
+local nuiLoaded = false
+
 local function SendNUIMessage(data)
-    if clockStart + 1000 >= GetGameTimer() then Wait(1000) end
+    while not nuiLoaded do
+        Wait(100)
+    end
     data.messageTargetUiName = "jo_prompt"
     NativeSendNUIMessage(data)
 end
 
 CreateThread(function()
     Wait(100)
-    if GetResourceMetadata(GetCurrentResourceName(), "ui_page") == "nui://jo_libs/nui/prompt/index.html" then
-        return
+    if GetResourceMetadata(GetCurrentResourceName(), "ui_page") ~= "nui://jo_libs/nui/prompt/index.html" then
+        jo.nui.load("jo_prompt", "nui://jo_libs/nui/prompt/index.html")
+        Wait(1000)
     end
-    jo.nui.load("jo_prompt", "nui://jo_libs/nui/prompt/index.html")
+    nuiLoaded = true
 end)
-
-
-
-
 
 -- * =============================================================================
 -- * VARIABLES
 -- * =============================================================================
 
-local keysPressed = {}
-local keysFired = {}
+local keysCompleted = {}
 local createdGroupsAmount = 0
-local currentGroupVisible = nil
+local currentGroupVisible = nil -- GroupClass|nil
 local forcedHide = false
-local nuiDriven = false
-local nuiDrivenCompletedKeys = {}
-
-
--- * ===============================================================================
--- * RegisterNUICallback for NUI Driven
--- * ===============================================================================
-RegisterNUICallback("keyCompleted", function(data, cb)
-    if nuiDriven then
-        local key = data.kkey:upper()
-        nuiDrivenCompletedKeys[key] = true
-    end
-    cb({ ok = "ok" })
-end)
-
-RegisterNUICallback("keyUp", function(data, cb)
-    local key = data.kkey:upper()
-    nuiDrivenCompletedKeys[key] = nil
-
-    cb({ ok = "ok" })
-end)
 
 -- * =============================================================================
--- * HELPERS
+-- * KEYS
 -- * =============================================================================
 
--- Listens for key press and release events for a specified key.
--- Updates the keysPressed and keysFired tables based on the key state,
--- and sends an NUI message indicating whether the key was pressed or released.
--- @param key string: The key identifier to listen for.
--- @param holdTime number|nil: Duration (in milliseconds) the key must be held before triggering.
--- @return nil
-local function listenKey(key, holdTime)
-    jo.rawKeys.listen(key, function(isPressed)
-        if isPressed then
-            if not currentGroupVisible then return end
-            keysPressed[key] = GetGameTimer() + (holdTime or 0)
-        else
-            keysPressed[key] = nil
-            keysFired[key] = nil
+local function doesKeyIsInVisiblePrompt(prompt, keys)
+    if not prompt.visible then return false end
+    for k = 1, #keys do
+        if table.find(prompt.keyboardKeys, keys[k]) then
+            return true, keys[k]
         end
-
-        SendNUIMessage({
-            type = isPressed and "keyDown" or "keyUp",
-            data = {
-                key = key
-            }
-        })
-    end)
+    end
+    return false
 end
 
--- Removes key listeners and resets key states for all prompts on a specified page.
--- @param group table: The prompt group containing the page.
--- @param pageNumber number: The page number from which to remove key listeners.
--- @return nil
-local function removePage(group, pageNumber)
-    if not group.prompts[pageNumber] then return end
-    for i = 1, #group.prompts[pageNumber] do
-        local prompt = group.prompts[pageNumber][i]
-        for j = 1, #prompt.keyboardKeys do
-            local key = prompt.keyboardKeys[j]
-            jo.rawKeys.remove(key)
-            keysPressed[key] = nil
-            keysFired[key] = nil
+local function keyDown(vk)
+    if not currentGroupVisible then return end
+    local group = currentGroupVisible
+    local page = group.currentPage
+    local prompts = group.prompts[page]
+    local key = jo.rawKeys.getKeyFromVK(vk)
+    if not key then return end
+    local alias = jo.rawKeys.getAliasFromStandardKey(key)
+    local keys = { key }
+    if alias ~= key then
+        keys[#keys + 1] = alias
+    end
+    for p = 1, #prompts do
+        local prompt = prompts[p]
+        local isValid, validKey = doesKeyIsInVisiblePrompt(prompt, keys)
+        if isValid then
             SendNUIMessage({
-                type = "keyUp",
+                type = "keyDown",
                 data = {
-                    key = key
+                    key = validKey
                 }
             })
+            if validKey == group.nextPageKey then
+                SendNUIMessage({
+                    type = "nextPage",
+                })
+                group.currentPage = group.currentPage + 1
+                if (group.currentPage > #group.prompts) then group.currentPage = 1 end
+            end
+            return true
         end
     end
 end
+
+local function keyUp(vk)
+    local key = jo.rawKeys.getKeyFromVK(vk)
+    SendNUIMessage({
+        type = "keyUp",
+        data = {
+            key = key
+        }
+    })
+    local alias = jo.rawKeys.getAliasFromStandardKey(key)
+    if alias == key then return end
+    SendNUIMessage({
+        type = "keyUp",
+        data = {
+            key = alias
+        }
+    })
+end
+
+local vks = jo.rawKeys.getAllVK()
+local vk_listener = {}
+CreateThread(function()
+    while not nuiLoaded do Wait(100) end
+    for k = 1, #vks do
+        local vk = vks[k]
+        local listener = jo.rawKeys.listen(vk, function(isPressed)
+            if isPressed then keyDown(vk) else keyUp(vk) end
+        end)
+        table.insert(vk_listener, listener)
+    end
+end)
+
+jo.stopped(function()
+    for l = 1, #vk_listener do
+        jo.rawKeys.removeListener(vk_listener[l])
+    end
+end)
 
 -- * =============================================================================
 -- * PROMPT
 -- * =============================================================================
 
-local PromptClass = {
-    label = "",
-    keyboardKeys = {},
-    holdTime = false,
-    disabled = false,
-    visible = true,
-    page = -1,
-    position = -1,
-    groupId = -1
-}
+---@class PromptClass
+---@field label string
+---@field keyboardKeys string[]
+---@field holdTime number|false
+---@field disabled boolean
+---@field visible boolean
+---@field page number
+---@field position number
+---@field groupId number
+---@field listener integer|nil
+local PromptClass = {}
+PromptClass.__index = PromptClass
+
+function PromptClass:new()
+    return setmetatable({
+        label = "",
+        keyboardKeys = {},
+        holdTime = false,
+        disabled = false,
+        visible = true,
+        page = -1,
+        position = -1,
+        groupId = -1,
+        listener = nil
+    }, self)
+end
 
 --- Refreshes the NUI interface for a prompt, updating a specific property. This update is only performed if the prompt belongs to the currently visible group.
 --- @param property string (The property name to update (e.g., "label", "disabled").)
@@ -154,13 +181,6 @@ end
 --- @param enabled boolean (`true` to enable the prompt, `false` to disable it.)
 function PromptClass:setEnabled(enabled)
     self.disabled = not enabled
-    for i = 1, #self.keyboardKeys do
-        if enabled then
-            listenKey(self.keyboardKeys[i], self.holdTime)
-        else
-            jo.rawKeys.remove(self.keyboardKeys[i])
-        end
-    end
     self:refreshNUI("disabled")
 end
 
@@ -184,7 +204,7 @@ function PromptClass:setKeyboardKeys(keyboardKeys)
     if type(keyboardKeys) == "table" then
         self.keyboardKeys = keyboardKeys
     else
-        self.keyboardKeys = { string.upper(keyboardKeys) }
+        self.keyboardKeys = { keyboardKeys }
     end
 end
 
@@ -199,16 +219,30 @@ end
 -- * GROUP
 -- * =============================================================================
 
-local GroupClass = {
-    id = -1,
-    title = "",
-    position = "bottom-right",
-    prompts = {},
-    visible = false,
-    nextPageKey = "A",
-    currentPage = 1,
+---@class GroupClass
+---@field id integer
+---@field title string
+---@field position string
+---@field prompts table<number, PromptClass[]>
+---@field visible boolean
+---@field nextPageKey string
+---@field nextPageListener integer|nil
+---@field currentPage number
+local GroupClass = {}
+GroupClass.__index = GroupClass
 
-}
+function GroupClass:new()
+    return setmetatable({
+        id = -1,
+        title = "",
+        position = "bottom-right",
+        prompts = {},
+        visible = false,
+        nextPageKey = "A",
+        nextPageListener = nil,
+        currentPage = 1,
+    }, self)
+end
 
 --- Refreshes the NUI interface for the group by updating a specified property. This update is only sent if the group is currently visible.
 --- @param property string (The group property to update (e.g., "title", "position",..).)
@@ -257,8 +291,8 @@ end
 --- @param page? number (The page number to add the prompt to<br> defaults to 1.)
 --- @return PromptClass (The newly created prompt object.)
 function GroupClass:addPrompt(key, label, holdTime, page)
-    local prompt = table.copy(PromptClass)
-    key = key:upper()
+    local prompt = PromptClass:new()
+    key = key:lower()
     prompt.groupId = self.id
     prompt:setLabel(label)
     prompt:setKeyboardKeys(key)
@@ -275,32 +309,9 @@ function GroupClass:addPrompt(key, label, holdTime, page)
     table.insert(self.prompts[page], prompt)
     prompt.page = page
     prompt.position = #self.prompts[page]
+
     return prompt
 end
-
--- Activates key listeners for all prompts on a specified page of a prompt group.
--- @param group table: The prompt group containing pages of prompts.
--- @param pageNumber number: The page number from which to activate key listeners.
--- @return nil
-local function listenPage(group, pageNumber)
-    if not group.prompts[pageNumber] then return end
-    for i = 1, #group.prompts[pageNumber] do
-        local prompt = group.prompts[pageNumber][i]
-        if (not prompt.disabled) then
-            for j = 1, #prompt.keyboardKeys do
-                local key = prompt.keyboardKeys[j]
-                listenKey(key, prompt.holdTime)
-            end
-        end
-    end
-end
-
-local function isNuiDriven()
-    if IsNuiFocused() and not IsNuiFocusKeepingInput() then return true end
-    return false
-end
-
-
 
 local function isForcedHide()
     if IsPauseMenuActive() then return true end
@@ -311,57 +322,45 @@ local function isForcedHide()
     return false
 end
 
+local loopStarted = false
+local function startLoop()
+    if loopStarted then return end
+    loopStarted = true
+    CreateThread(function()
+        while jo.promptNui.isDisplayed() do
+            -- Standard group display operations
+            for i = 1, 12 do
+                UiPromptDisablePromptTypeThisFrame(i)
+            end
+
+            if currentGroupVisible and isForcedHide() then
+                currentGroupVisible:forceHide()
+                while isForcedHide() do
+                    Wait(100)
+                end
+                Wait(650)
+                if currentGroupVisible then
+                    currentGroupVisible:forceDisplay()
+                end
+            end
+
+            Wait(0)
+        end
+        loopStarted = false
+    end)
+end
+
 --- Displays the prompt group on the NUI interface and sets up key listeners for the active page. If the group has multiple pages, it also configures pagination using the nextPageKey.
 --- @param page? number (The page number to display<br> defaults to the group's current page.)
 function GroupClass:display(page)
-    if currentGroupVisible then
-        jo.rawKeys.remove(currentGroupVisible.nextPageKey)
-        removePage(currentGroupVisible, currentGroupVisible.currentPage)
-    end
-
-    local lastGroupVisibleId = currentGroupVisible and currentGroupVisible.id or -1
     currentGroupVisible = self
 
-    if lastGroupVisibleId ~= self.id then
-        CreateThread(function()
-            local wasNuiDriven = nuiDriven -- Initialize with current state
-
-            -- Do an immediate check at the start
-            nuiDriven = isNuiDriven()
-
-            while true do
-                if not currentGroupVisible or (currentGroupVisible.id ~= self.id) then break end
-
-                local currentNuiState = isNuiDriven()
-                if currentNuiState ~= nuiDriven then
-                    -- State changed, update immediately
-                    nuiDriven = currentNuiState
-
-                    -- Reset nuiDrivenCompletedKeys when exiting nuiDriven mode
-                    if wasNuiDriven and not nuiDriven then
-                        nuiDrivenCompletedKeys = {}
-                    end
-
-                    wasNuiDriven = nuiDriven
-                end
-
-                -- Standard group display operations
-                for i = 1, 12 do
-                    UiPromptDisablePromptTypeThisFrame(i)
-                end
-
-                if isForcedHide() then
-                    self:forceHide()
-                    while isForcedHide() do
-                        Wait(100)
-                    end
-                    Wait(650)
-                    self:forceDisplay()
-                end
-
-                Wait(0)
-            end
-        end)
+    if forcedHide then
+        forcedHide = false
+        SendNUIMessage({
+            type = "forceHide",
+            data = { value = false }
+        })
     end
 
     self.currentPage = page and math.min(page, #self.prompts) or self.currentPage
@@ -370,28 +369,7 @@ function GroupClass:display(page)
         type = "setGroup",
         data = table.clearForNui(self)
     })
-
-    listenPage(self, self.currentPage)
-
-    if #self.prompts > 1 then
-        jo.rawKeys.listen(self.nextPageKey, function(isPressed)
-            if isPressed then
-                SendNUIMessage({
-                    type = "nextPage",
-                })
-                removePage(self, self.currentPage)
-                self.currentPage = self.currentPage + 1
-                if (self.currentPage > #self.prompts) then self.currentPage = 1 end
-                listenPage(self, self.currentPage)
-            end
-            SendNUIMessage({
-                type = isPressed and "keyDown" or "keyUp",
-                data = {
-                    key = self.nextPageKey
-                }
-            })
-        end)
-    end
+    startLoop()
 end
 
 function GroupClass:forceDisplay()
@@ -404,18 +382,19 @@ end
 
 --- Hides the prompt group from the NUI interface and removes its active key listeners.
 function GroupClass:hide()
-    currentGroupVisible = nil
     self.visible = false
-    nuiDrivenCompletedKeys = {}
-    keysPressed = {}
-    SendNUIMessage({
-        type = "setGroup",
-        data = {
-            prompts = {}
-        }
-    })
-    jo.rawKeys.remove(self.nextPageKey)
-    removePage(self, self.currentPage)
+
+    -- Only clear the global state if this group is still the active one
+    if currentGroupVisible == self then
+        currentGroupVisible = nil
+        keysCompleted = {}
+        SendNUIMessage({
+            type = "setGroup",
+            data = {
+                prompts = {}
+            }
+        })
+    end
 end
 
 function GroupClass:forceHide()
@@ -435,7 +414,7 @@ end
 --- @param position? string (The screen position for the group. <br> Allowed values are : `"bottom-right"`,`"center-right"`,`"top-right"`,`"bottom-left"`,`"center-left"`,`"top-left"` <br> default : `"bottom-right"`)
 --- @return GroupClass (A new instance of a prompt group.)
 function jo.promptNui.createGroup(title, position)
-    local group = table.copy(GroupClass)
+    local group = GroupClass:new()
     group:setTitle(title)
     createdGroupsAmount = createdGroupsAmount + 1
     group.id = createdGroupsAmount
@@ -451,6 +430,8 @@ end
 --- @return boolean (True if the key press is complete and valid, otherwise `false`.)
 function jo.promptNui.isCompleted(group, key, fireMultipleTimes)
     -- Retrocompat with old signature: isCompleted(key, fireMultipleTimes)
+    if forcedHide then return false end
+
     if type(key) ~= "string" then
         fireMultipleTimes = key
         key = group
@@ -459,13 +440,12 @@ function jo.promptNui.isCompleted(group, key, fireMultipleTimes)
 
     if type(key) ~= "string" then return false end
 
-    fireMultipleTimes = fireMultipleTimes or false
-    key = key:upper()
-    if forcedHide then return false end
+    fireMultipleTimes = GetValue(fireMultipleTimes, false)
+    key = key:lower()
 
     -- When a group is provided, only allow completion checks for the currently visible group.
     if group then
-        if not currentGroupVisible then return false end
+        if not jo.promptNui.isDisplayed() then return false end
 
         if type(group) == "table" then
             if currentGroupVisible.id ~= group.id then return false end
@@ -474,27 +454,46 @@ function jo.promptNui.isCompleted(group, key, fireMultipleTimes)
         end
     end
 
-
-
-
-    -- Check for NUI-driven completed keys when in NUI mode
-    if nuiDriven then
-        if nuiDrivenCompletedKeys[key] then
-            if not fireMultipleTimes then
-                nuiDrivenCompletedKeys[key] = nil
-            end
-            return true
-        end
-
+    if not keysCompleted[key] then
         return false
     end
 
-    if not keysPressed[key] then return false end
-
-    if GetGameTimer() >= keysPressed[key] then
-        if (not fireMultipleTimes and keysFired[key]) then return false end
-        keysFired[key] = true
+    if fireMultipleTimes then
         return true
     end
-    return false
+
+    local currentTime = GetGameTimer()
+    if keysCompleted[key] ~= currentTime then
+        return false
+    end
+
+    return true
 end
+
+function jo.promptNui.isDisplayed()
+    return currentGroupVisible ~= nil
+end
+
+-- * ===============================================================================
+-- * RegisterNUICallback for NUI Driven
+-- * ===============================================================================
+RegisterNUICallback("keyCompleted", function(data, cb)
+    -- log("keyCompleted", data)
+    local key = data.kkey:lower()
+    keysCompleted[key] = GetGameTimer()
+    cb({ ok = "ok" })
+end)
+
+RegisterNUICallback("keyUp", function(data, cb)
+    -- log("keyCompleted", data)
+    local key = data.kkey:lower()
+    keysCompleted[key] = nil
+    cb({ ok = "ok" })
+end)
+
+RegisterNUICallback("keyDown", function(data, cb)
+    -- log("keyCompleted", data)
+    local key = data.kkey:lower()
+    keysCompleted[key] = nil
+    cb({ ok = "ok" })
+end)
