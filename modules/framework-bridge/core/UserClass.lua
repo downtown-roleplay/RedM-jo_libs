@@ -16,14 +16,14 @@ function jo.framework.UserClass:get(source)
   local user = {}
   setmetatable(user, self)
   self.__index = self
-  self.source = tonumber(source)
+  user.source = tonumber(source)
 
-  local data = Core.GetUserFromPlayerId(self.source)
+  local data = Core.GetUserFromPlayerId(user.source)
   if not data then
-    return false, eprint("User doesn't exist. source:", self.source)
+    return false, eprint("User doesn't exist. source:", user.source)
   end
 
-  self.data = data
+  user.data = data
   return user
 end
 
