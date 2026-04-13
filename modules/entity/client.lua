@@ -77,8 +77,9 @@ function jo.entity.fadeOut(entity, duration)
 	local horses = {}
     local entityModel = GetEntityModel(entity)
     local isBoat = IsThisModelABoat(entityModel)
+	local isBalloon = IsPedInFlyingVehicle(jo.me) == 1
 	if IsEntityAVehicle(entity) then
-		if not isBoat then 
+		if not (isBoat or isBalloon) then 
 			local model = GetEntityModel(entity)
 			local horseCount = GetNumDraftVehicleHarnessPed(model)
 			for i = 0, horseCount - 1 do
