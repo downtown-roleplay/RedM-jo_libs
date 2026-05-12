@@ -355,13 +355,16 @@ jo.component.data.expressions = {
   mouthConerRightLipsDistance = 60292,
 
   arms = 46032,
+  forearms = 8420,
   chest = 27779,
   hip = 49787,
+  buttHips = 8991,
   neckDepth = 60890,
   neckWidth = 36277,
   shoulderBlades = 18046,
   shoulders = 50039,
   shoulderThickness = 7010,
+  trapeziusFront = 33485,
   waist = 50460,
 
   calves = 42067,

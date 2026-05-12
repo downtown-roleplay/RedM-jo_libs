@@ -555,6 +555,7 @@ function jo.framework:standardizeSkinInternal(skin)
 
   standard.expressions = {
     arms = table.extract(skin, "ArmsS"),
+    forearms = table.extract(skin, "ForearmsS"),
     calves = table.extract(skin, "CalvesS"),
     cheekbonesDepth = table.extract(skin, "CheekBonesD"),
     cheekbonesHeight = table.extract(skin, "CheekBonesH"),
@@ -582,6 +583,7 @@ function jo.framework:standardizeSkinInternal(skin)
     faceWidth = table.extract(skin, "FaceW"),
     headWidth = table.extract(skin, "HeadSize"),
     hip = table.extract(skin, "HipsS"),
+    buttHips = table.extract(skin, "ButtHipsS"),
     jawDepth = table.extract(skin, "JawD"),
     jawHeight = table.extract(skin, "JawH"),
     jawWidth = table.extract(skin, "JawW"),
@@ -612,6 +614,7 @@ function jo.framework:standardizeSkinInternal(skin)
     shoulderBlades = table.extract(skin, "ShouldersM"),
     shoulders = table.extract(skin, "ShouldersS"),
     shoulderThickness = table.extract(skin, "ShouldersT"),
+    trapeziusFront = table.extract(skin, "TrapeziusFrontS"),
     thighs = table.extract(skin, "LegsS"),
     upperLipDepth = table.extract(skin, "ULiphD"),
     upperLipHeight = table.extract(skin, "ULiphH"),
@@ -853,6 +856,7 @@ function jo.framework:revertSkinInternal(standard)
   reverted.Scale = table.extract(standard, "bodyScale")
 
   reverted.ArmsS = table.extract(standard.expressions, "arms")
+  reverted.ForearmsS = table.extract(standard.expressions, "forearms")
   reverted.CalvesS = table.extract(standard.expressions, "calves")
   reverted.CheekBonesD = table.extract(standard.expressions, "cheekbonesDepth")
   reverted.CheekBonesH = table.extract(standard.expressions, "cheekbonesHeight")
@@ -880,6 +884,7 @@ function jo.framework:revertSkinInternal(standard)
   reverted.FaceW = table.extract(standard.expressions, "faceWidth")
   reverted.HeadSize = table.extract(standard.expressions, "headWidth")
   reverted.HipsS = table.extract(standard.expressions, "hip")
+  reverted.ButtHipsS = table.extract(standard.expressions, "buttHips")
   reverted.JawD = table.extract(standard.expressions, "jawDepth")
   reverted.JawH = table.extract(standard.expressions, "jawHeight")
   reverted.JawW = table.extract(standard.expressions, "jawWidth")
@@ -910,6 +915,7 @@ function jo.framework:revertSkinInternal(standard)
   reverted.ShouldersM = table.extract(standard.expressions, "shoulderBlades")
   reverted.ShouldersS = table.extract(standard.expressions, "shoulders")
   reverted.ShouldersT = table.extract(standard.expressions, "shoulderThickness")
+  reverted.TrapeziusFrontS = table.extract(standard.expressions, "trapeziusFront")
   reverted.LegsS = table.extract(standard.expressions, "thighs")
   reverted.ULiphD = table.extract(standard.expressions, "upperLipDepth")
   reverted.ULiphH = table.extract(standard.expressions, "upperLipHeight")
