@@ -237,6 +237,7 @@ jo.component.data.wearableStates = {
     "shirt_009",
     "closed_collar_rolled_sleeve_vest_coat_open",
     "closed_collar_rolled_sleeve_coat_open",
+    "hidden"
   }
 }
 jo.component.data.wearableStatesName = {}
@@ -290,6 +291,10 @@ jo.component.data.palettes = {
   "metaped_tint_skirt_worn",
   "metaped_tint_si_template",
   "metaped_tint_teeth",
+  "metaped_tint_swatch_000",
+  "metaped_tint_swatch_001",
+  "metaped_tint_swatch_002",
+  "metaped_tint_swatch_003",
 }
 jo.component.palettes = jo.component.data.palettes --deprecated name
 jo.component.data.palettesName = {}

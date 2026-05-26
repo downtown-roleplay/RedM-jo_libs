@@ -530,6 +530,10 @@ function jo.component.apply(ped, category, _data)
     RemoveTagFromMetaPed(ped, categoryHash, 0)
     if categoryHash == `neckwear` then
       RemoveTagFromMetaPed(ped, `neckerchiefs`, 0)
+    elseif categoryHash == `ponchos` then
+      RemoveTagFromMetaPed(ped, `cloaks`, 0)
+    elseif categoryHash == `cloaks` then
+      RemoveTagFromMetaPed(ped, `ponchos`, 0)
     end
   end
   reapplyCached(ped)
@@ -938,6 +942,12 @@ function jo.component.getCategoriesEquiped(ped)
     elseif category == `neckerchiefs` then
       categories[`neckwear`] = table.copy(categories[category])
       categories[`neckwear`].category = "neckwear"
+    elseif category == `ponchos` then
+      categories[`cloaks`] = table.copy(categories[category])
+      categories[`cloaks`].category = "cloaks"
+    elseif category == `cloaks` then
+      categories[`ponchos`] = table.copy(categories[category])
+      categories[`ponchos`].category = "ponchos"
     end
   end
   return categories

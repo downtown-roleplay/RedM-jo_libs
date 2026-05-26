@@ -1,4 +1,4 @@
--------------
+﻿-------------
 -- USER CLASS
 -------------
 
@@ -75,6 +75,14 @@ function jo.framework.UserClass:getIdentifiers()
     charid = tonumber(character?.id),
     identifier = tostring(character?.identifier)
   }
+end
+
+function jo.framework.UserClass:getJobGrade()
+  local character = Core.GetCharacterFromPlayerId(self.source)
+  local grades = table.map(character?.roles, function(v, i)
+    return v.grade
+  end)
+  return grades
 end
 
 function jo.framework.UserClass:getJob()

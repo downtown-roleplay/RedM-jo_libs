@@ -1,3 +1,11 @@
+﻿
+RegisterNetEvent("vorpcharacter:reloadedskinlistener", function()
+  local source = source
+  if table.count(jo.framework:getUserIdentifiers(source)) == 0 then return end
+  local skin = jo.framework:getUserSkin(source)
+  local clothes = jo.framework:getUserClothes(source)
+  TriggerClientEvent("jo_libs:client:applySkinAndClothes", source, nil, skin, clothes)
+end)
 
 function getItemsFromDB()
     local awaitItems = promise.new()
@@ -24,9 +32,11 @@ local function waitInitInventoryItems()
   while table.isEmpty(jo.framework.inventoryItems) do Wait(10) end
 end
 
-jo.callback.register.latent("jo_framework_getInventoryItems", function()
-  waitInitInventoryItems()
-  return jo.framework.inventoryItems
+jo.ready(function()
+  jo.callback.register.latent("jo_libs:server:jo_framework_getInventoryItems", function()
+    waitInitInventoryItems()
+    return jo.framework.inventoryItems
+  end)
 end)
 
 function jo.framework:getInventoryItems()

@@ -75,17 +75,13 @@ function jo.entity.fadeOut(entity, duration)
 	local startAlpha = GetEntityAlpha(entity)
 	local alpha = startAlpha
 	local horses = {}
-    local entityModel = GetEntityModel(entity)
-    local isBoat = IsThisModelABoat(entityModel)
-	local isBalloon = IsPedInFlyingVehicle(jo.me) == 1
 	if IsEntityAVehicle(entity) then
-		if not (isBoat or isBalloon) then 
-			local model = GetEntityModel(entity)
-			local horseCount = GetNumDraftVehicleHarnessPed(model)
-			for i = 0, horseCount - 1 do
-				horses[#horses + 1] = GetPedInDraftHarness(entity, i)
-			end
+		local model = GetEntityModel(entity)
+		local horseCount = GetNumDraftVehicleHarnessPed(model)
+		for i = 0, horseCount - 1 do
+			horses[#horses + 1] = GetPedInDraftHarness(entity, i)
 		end
+		HideHorseReins(entity)
 	end
 	while alpha > 0 do
 		local time = GetGameTimer() - startTime
