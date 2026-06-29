@@ -3,22 +3,26 @@ jo.require("string")
 jo.require("math")
 jo.require("callback")
 
--- -----------
--- LOAD FRAMEWORK
--- -----------
-
 ---@class UserClass
 jo.framework.UserClass = {}
 
-jo.framework:loadFile("UserClass")
-jo.framework:loadFile("FrameworkClass")
+-------------
+-- VARIABLES
+-------------
+local SourceFromIdentifiers = {}
+local IdentifiersFromSource = {}
 
+------------
+-- CORE
+------------
 
+jo.framework:loadCoreFiles("server")
 
+-------------
+-- Inventories
+-------------
+jo.framework:loadInventoryFiles("server")
 
--- -----------
--- END LOAD FRAMEWORK
--- -----------
 
 -- -----------
 -- POWER UP FUNCTIONS
@@ -71,7 +75,9 @@ end
 ---@param name string (The name of the framework to check against <br> Supported frameworks : <br> `"VORP"` or `"RedEM"` or `"RedEM2023"` or `"qbr"` or `"rsg"` or `"qr"` or `"rpx"`)
 ---@return boolean (Return `true` if the current framework matches the name)
 function jo.framework:is(name)
-  return self:get() == name
+  local coreId = self:get()
+  if not coreId then return false end
+  return coreId:lower() == name:lower()
 end
 
 --- Retrieves a player's full UserClass object containing all player data and methods
@@ -436,6 +442,21 @@ function jo.framework:standardizeSkin(skin)
   if standard.beards_complete and type(standard.beards_complete) ~= "table" then
     standard.beards_complete = { hash = standard.beards_complete }
   end
+  if standard.beards_chin and type(standard.beards_chin) ~= "table" then
+    standard.beards_chin = { hash = standard.beards_chin }
+  end
+  if standard.beards_chops and type(standard.beards_chops) ~= "table" then
+    standard.beards_chops = { hash = standard.beards_chops }
+  end
+  if standard.beards_mustache and type(standard.beards_mustache) ~= "table" then
+    standard.beards_mustache = { hash = standard.beards_mustache }
+  end
+  if standard.beards and type(standard.beards) ~= "table" then
+    standard.beards = { hash = standard.beards }
+  end
+  if standard.hair_bonnet and type(standard.hair_bonnet) ~= "table" then
+    standard.hair_bonnet = { hash = standard.hair_bonnet }
+  end
 
   if jo.debug then
     if table.count(skin) > 0 then
@@ -470,6 +491,22 @@ function jo.framework:revertSkin(standard)
   if table.count(skin.expressions) == 0 then
     skin.expressions = nil
   end
+  if standard.beards_chin ~= nil then
+    skin.beards_chin = table.extract(standard, "beards_chin")
+  end
+  if standard.beards_chops ~= nil then
+    skin.beards_chops = table.extract(standard, "beards_chops")
+  end
+  if standard.beards_mustache ~= nil then
+    skin.beards_mustache = table.extract(standard, "beards_mustache")
+  end
+  if standard.beards ~= nil then
+    skin.beards = table.extract(standard, "beards")
+  end
+  if standard.hair_bonnet ~= nil then
+    skin.hair_bonnet = table.extract(standard, "hair_bonnet")
+  end
+
 
   if jo.debug then
     if table.count(standard) > 0 then
@@ -562,6 +599,7 @@ end
 
 local charSelectedCallbacks = {}
 
+---@autodoc:config ignore:true
 function ExecCharacterSelectedCallback(source, isNew)
   isNew = GetValue(isNew, false)
   for i = 1, #charSelectedCallbacks do
@@ -574,22 +612,6 @@ end
 function jo.framework:onCharacterSelected(cb)
   table.insert(charSelectedCallbacks, cb)
 end
-
--- -----------
--- END POWER UP FUNCTIONS
--- -----------
-
--- -----------
--- LOAD CUSTOM FUNCTIONS
--- -----------
-jo.framework:loadFile("_custom", "UserClass")
-jo.framework:loadFile("_custom", "FrameworkClass")
-
-jo.framework:loadFile("server")
-jo.framework:loadFile("_custom", "server")
-
-local SourceFromIdentifiers = {}
-local IdentifiersFromSource = {}
 
 local function generateKey(identifier, charid)
   return ("%s|%s"):format(identifier, charid)
@@ -616,13 +638,16 @@ jo.framework:onCharacterSelected(function(source)
   addIdentifiersLink(source)
 end)
 
-
-
 CreateThread(function()
   local players = GetPlayers()
   for i = 1, #players do
     addIdentifiersLink(tonumber(players[i]))
   end
+end)
+
+AddEventHandler("playerDropped", function()
+  local source = source
+  dropIdentifiersLink(source)
 end)
 
 --- Retrieves the source ID from identifiers
@@ -634,10 +659,6 @@ function jo.framework:getSourceFromIdentifiers(identifier, charid)
   return SourceFromIdentifiers[key] or false
 end
 
-AddEventHandler("playerDropped", function()
-  local source = source
-  dropIdentifiersLink(source)
-end)
 
 --- Merge inventory configuration
 ---@param ... table (The inventory configurations to merge)
