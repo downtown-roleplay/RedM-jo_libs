@@ -58,5 +58,11 @@ return {
     name = "FRP Core",
     folder = "frp_core",
     matchResources = { "frp_core" }
+  },
+  {
+    id = "core",
+    name = "Downtown Core",
+    folder = "core",
+    matchResources = { "core" }
   }
 }
