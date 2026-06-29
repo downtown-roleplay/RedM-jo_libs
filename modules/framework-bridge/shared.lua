@@ -109,7 +109,15 @@ end
 local function detectFramework()
   local frameworkConvarValue = GetConvar("jo_libs:framework", "false") -- Force the framework
   if frameworkConvarValue ~= "false" then
-    return frameworkConvarValue
+    -- Lookup the framework by its id in supportedFrameworks
+    for i = 1, #supportedFrameworks do
+      if supportedFrameworks[i].id == frameworkConvarValue then
+        return supportedFrameworks[i]
+      end
+    end
+    -- Fallback: framework id not found in list
+    eprint(("ERROR: Framework '%s' not found in supportedFrameworks"):format(frameworkConvarValue))
+    return false
   end
 
   local frameworkDetected
