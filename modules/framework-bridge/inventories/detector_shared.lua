@@ -63,6 +63,12 @@ return {
     id = "ox",
     name = "OX Inventory",
     folder = "ox_inventory",
-    matchResources = { "inventory" }
+    matchResources = { "ox_inventory", "inventory" }
+  },
+  {
+    id = "gm",
+    name = "GM Inventory",
+    folder = "gm_inventory",
+    matchResources = { "gm_inventory" }
   }
 }

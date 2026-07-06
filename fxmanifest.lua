@@ -1,9 +1,9 @@
 author "JUMP ON studios : https://jumpon-studios.com"
 documentation "https://docs.jumpon-studios.com"
-version "2.12.2"
+version "2.12.4"
 package_id "1"
 
-fx_version "cerulean"
+fx_version "2.12.4"
 
 rdr3_warning "I acknowledge that this is a prerelease build of RedM, and I am aware my resources *will* become incompatible once RedM ships."
 
