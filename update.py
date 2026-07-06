@@ -1,7 +1,6 @@
-﻿import os
+import os
 import re
 import sys
-import json
 import tempfile
 import zipfile
 import shutil
@@ -17,6 +16,9 @@ GITHUB_API = f"https://api.github.com/repos/{UPSTREAM_OWNER}/{UPSTREAM_REPO}"
 
 ROOT = Path(__file__).resolve().parent
 FXMANIFEST = ROOT / "fxmanifest.lua"
+
+# Caminho dos arquivos que NAO devem ser tocados durante a atualizacao
+PRESERVE_DIR = ROOT / "modules" / "framework-bridge" / "cores" / "core"
 
 
 def on_rm_error(func, path, exc_info):
@@ -38,45 +40,36 @@ def get_current_version():
     return match.group(1)
 
 
-def parse_version(v: str):
-    parts = v.strip().split(".")
-    return tuple(int(p) if p.isdigit() else 0 for p in parts[:3])
-
-
-def get_latest_upstream_version():
-    url = f"{GITHUB_API}/tags?per_page=20"
+def get_upstream_version_from_raw():
+    """Busca a versao mais recente lendo o fxmanifest.lua raw do branch main."""
+    url = "https://raw.githubusercontent.com/" \
+          f"{UPSTREAM_OWNER}/{UPSTREAM_REPO}/main/jo_libs/fxmanifest.lua"
     req = urllib.request.Request(url, headers={
-        "User-Agent": "update.py/1.0",
-        "Accept": "application/vnd.github.v3+json"
+        "User-Agent": "update.py/1.0"
     })
 
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
-            tags = json.loads(resp.read().decode("utf-8"))
+            content = resp.read().decode("utf-8")
     except urllib.error.HTTPError as e:
-        print(f"ERRO: falha ao buscar tags do GitHub: {e.code} {e.reason}")
+        print(f"ERRO: falha ao buscar fxmanifest.lua upstream: {e.code} {e.reason}")
         sys.exit(1)
     except urllib.error.URLError as e:
         print(f"ERRO: sem conexao com GitHub: {e.reason}")
         sys.exit(1)
 
-    version_tags = []
-    for tag in tags:
-        name = tag["name"].lstrip("vV")
-        if re.match(r"^\d+\.\d+\.\d+", name):
-            version_tags.append((parse_version(name), name, tag["name"]))
-
-    if not version_tags:
-        print("ERRO: nenhuma tag de versao encontrada no upstream")
+    match = re.search(r'version\s+"([^"]+)"', content)
+    if not match:
+        print("ERRO: versao nao encontrada no fxmanifest.lua upstream")
         sys.exit(1)
 
-    version_tags.sort(key=lambda x: x[0], reverse=True)
-    return version_tags[0]
+    return match.group(1)
 
 
-def download_and_update(latest_tag: str):
-    zip_url = f"{GITHUB_API}/zipball/refs/tags/{latest_tag}"
-    print(f"Baixando {UPSTREAM_OWNER}/{UPSTREAM_REPO} {latest_tag}...")
+def download_and_update(upstream_version: str, create_backup: bool = True):
+    version_clean = upstream_version.replace(".", "_")
+    zip_url = f"{GITHUB_API}/zipball/heads/main"
+    print(f"Baixando {UPSTREAM_OWNER}/{UPSTREAM_REPO} versao {upstream_version}...")
 
     req = urllib.request.Request(zip_url, headers={
         "User-Agent": "update.py/1.0",
@@ -112,20 +105,41 @@ def download_and_update(latest_tag: str):
             print("ERRO: pasta 'jo_libs' nao encontrada dentro do zip do upstream")
             sys.exit(1)
 
-        version_clean = latest_tag.lstrip("vV").replace(".", "_")
-        backup_dir = ROOT / f".backup_{version_clean}"
+        # --- Backup dos arquivos preservados antes de sobrescrever ---
+        preserved_temp = None
+        if PRESERVE_DIR.exists() and PRESERVE_DIR.is_dir():
+            preserved_temp = Path(tmpdir) / "preserved_core"
+            shutil.copytree(PRESERVE_DIR, preserved_temp)
+            print(f"Arquivos preservados salvos temporariamente: {PRESERVE_DIR}")
 
-        if backup_dir.exists():
-            shutil.rmtree(backup_dir, onerror=on_rm_error)
+        if create_backup:
+            backup_dir = ROOT / f".backup_{version_clean}"
 
-        shutil.copytree(ROOT, backup_dir, ignore=shutil.ignore_patterns(".backup_*"))
-        print(f"Backup criado em: {backup_dir}")
+            if backup_dir.exists():
+                try:
+                    shutil.rmtree(backup_dir, onerror=on_rm_error)
+                except Exception as e:
+                    print(f"AVISO: nao foi possivel remover backup existente: {e}")
 
+            shutil.copytree(ROOT, backup_dir, ignore=shutil.ignore_patterns(".backup_*"))
+            print(f"Backup criado em: {backup_dir}")
+        else:
+            print("Backup skipping (desativado pelo usuario)")
+
+        # --- Copia todos os arquivos do upstream, item por item ---
         for item in jo_libs_source.iterdir():
             dest = ROOT / item.name
+            # Se for exatamente a pasta que queremos preservar, nao deleta nem copia
+            if dest == PRESERVE_DIR:
+                continue
+
             if dest.exists():
                 if dest.is_dir():
-                    shutil.rmtree(dest, onerror=on_rm_error)
+                    try:
+                        shutil.rmtree(dest, onerror=on_rm_error)
+                    except Exception as e:
+                        print(f"AVISO: nao foi possivel remover {dest}: {e}")
+                        continue
                 else:
                     dest.chmod(stat.S_IWRITE)
                     dest.unlink()
@@ -134,23 +148,59 @@ def download_and_update(latest_tag: str):
             else:
                 shutil.copy2(item, dest)
 
-    print(f"Atualizado para versao {latest_tag}")
+        # --- Restaura os arquivos preservados por cima do que foi copiado ---
+        if preserved_temp is not None:
+            # Garante que o diretorio de destino existe (pode ter sido recriado pelo copytree)
+            PRESERVE_DIR.mkdir(parents=True, exist_ok=True)
+            for item in preserved_temp.iterdir():
+                dest = PRESERVE_DIR / item.name
+                if dest.exists():
+                    if dest.is_dir():
+                        try:
+                            shutil.rmtree(dest, onerror=on_rm_error)
+                        except Exception as e:
+                            print(f"AVISO: nao foi possivel remover {dest}: {e}")
+                            continue
+                    else:
+                        dest.chmod(stat.S_IWRITE)
+                        dest.unlink()
+                if item.is_dir():
+                    shutil.copytree(item, dest)
+                else:
+                    shutil.copy2(item, dest)
+            print(f"Arquivos preservados restaurados: {PRESERVE_DIR}")
+
+        # Atualiza o fxmanifest.lua com a nova versao
+        if FXMANIFEST.exists():
+            content = FXMANIFEST.read_text(encoding="utf-8")
+            content = re.sub(
+                r'(version\s+)"([^"]+)"',
+                rf'\1"{upstream_version}"',
+                content
+            )
+            FXMANIFEST.write_text(content, encoding="utf-8")
+
+    print(f"Atualizado para versao {upstream_version}")
 
 
 def main():
     current = get_current_version()
     print(f"Versao atual: {current}")
 
-    latest_parsed, latest_raw, latest_tag = get_latest_upstream_version()
-    print(f"Ultima versao upstream: {latest_raw}")
+    upstream_version = get_upstream_version_from_raw()
+    print(f"Ultima versao upstream: {upstream_version}")
 
-    if latest_parsed > parse_version(current):
-        print(f"Nova versao disponivel: {latest_raw}")
+    if upstream_version != current:
+        print(f"Nova versao disponivel: {upstream_version}")
         resposta = input("Deseja atualizar? (s/N): ").strip().lower()
-        if resposta == "s":
-            download_and_update(latest_tag)
-        else:
+        if resposta != "s":
             print("Atualizacao cancelada.")
+            return
+
+        resposta_bkp = input("Criar backup antes de atualizar? (S/n): ").strip().lower()
+        create_backup = resposta_bkp != "n"
+
+        download_and_update(upstream_version, create_backup=create_backup)
     else:
         print("Voce ja esta na versao mais recente.")
 
