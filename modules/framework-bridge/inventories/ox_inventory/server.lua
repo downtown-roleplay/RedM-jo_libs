@@ -27,7 +27,7 @@ end
 ---@return boolean
 function jo.framework:registerUseItem(item, closeAfterUsed, callback)
   exports.core:GetCoreObject().RegisterUsableItem(item, function(source, item)
-    local character = Core.GetCharacterFromPlayerId(source)
+    local character = exports.core:GetCoreObject().GetCharacterFromPlayerId(source)
     if character then
       if closeAfterUsed then
         character.triggerEvent('ox_inventory:closeInventory')
