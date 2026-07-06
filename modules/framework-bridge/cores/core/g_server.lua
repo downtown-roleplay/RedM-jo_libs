@@ -1,4 +1,3 @@
-﻿
 RegisterNetEvent("vorpcharacter:reloadedskinlistener", function()
   local source = source
   if table.count(jo.framework:getUserIdentifiers(source)) == 0 then return end
