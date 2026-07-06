@@ -23,12 +23,12 @@ return {
     folder = "qbr_core",
     matchResources = { "qbr-core" },
   },
-  {
-    id = "rsg",
-    name = "RSG V1 Core",
-    folder = "rsg-core",
-    matchResources = { "rsg-core<2.0.0" },
-  },
+  -- {
+  --   id = "rsg",
+  --   name = "RSG V1 Core",
+  --   folder = "rsg-core",
+  --   matchResources = { "rsg-core<2.0.0" },
+  -- },
   {
     id = "rsg_v2",
     name = "RSG V2 Core",
