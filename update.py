@@ -174,8 +174,8 @@ def download_and_update(upstream_version: str, create_backup: bool = True):
         if FXMANIFEST.exists():
             content = FXMANIFEST.read_text(encoding="utf-8")
             content = re.sub(
-                r'(version\s+)"([^"]+)"',
-                rf'\1"{upstream_version}"',
+                r'\bversion\s+"([^"]+)"',
+                rf'version "{upstream_version}"',
                 content
             )
             FXMANIFEST.write_text(content, encoding="utf-8")
