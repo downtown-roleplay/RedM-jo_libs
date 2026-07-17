@@ -1,5 +1,6 @@
 jo.createModule("pricing")
 jo.require("table")
+jo.require("framework")
 
 local currencyKeys = { "money", "gold", "rol" }
 
@@ -133,11 +134,11 @@ local function normalizeCost(data)
       error("ItemCost.quantity must be a number", 3)
     end
 
-    return {
+    return jo.framework:addItemDataToPrice({
       item = data.item,
       quantity = quantity,
       keep = data.keep == true
-    }
+    })
   end
 
   error("Unsupported cost shape", 3)
@@ -495,8 +496,17 @@ end
 
 --- Returns the canonical costs list.
 ---@return Cost[]
-function PriceClass:get()
+function PriceClass:getCosts()
   return self.costs
+end
+
+--- Returns the canonical costs list.
+---@ignore
+---@autodoc:config ignore:true
+---@deprecated Use getCosts() instead
+---@return Cost[]
+function PriceClass:get()
+  return self:getCosts()
 end
 
 --- Removes every cost from the current PriceClass.
@@ -807,6 +817,20 @@ function PriceGroupClass:get(index)
   return self.prices[index]
 end
 
+--- Returns the costs of a price by index.
+---@param index number (Price index)
+---@return Cost[]|nil
+function PriceGroupClass:getCosts(index)
+  if type(index) ~= "number" then
+    error("PriceGroupClass:getCosts(index) requires a number index", 2)
+  end
+  local price = self:get(index)
+  if not price then
+    error("PriceGroupClass:getCosts(index) index is out of bounds")
+  end
+  return price:getCosts()
+end
+
 --- Replaces an existing PriceClass by index.
 ---@param index number (Existing price index to replace)
 ---@param price PriceInput (Replacement price input)
@@ -871,25 +895,36 @@ end
 -- * ==========================================
 
 --- Creates a canonical PriceClass.
----@param data? PriceInput (Price input to normalize <br> default:`nil`)
+---@param data? PriceInput|PriceClass (Price input to normalize <br> default:`nil`)
+---@param reuseExisting? boolean (Reuse existing PriceClass if already created <br> default:`false`)
 ---@return PriceClass
-function jo.pricing.new(data)
+function jo.pricing.new(data, reuseExisting)
+  if reuseExisting then
+    return isPrice(data) and data or PriceClass.new(data)
+  end
   return PriceClass.new(data)
 end
 
 --- Creates a canonical PriceGroupClass.
 ---@param data? PriceGroupInput (Price group input to normalize <br> default:`nil`)
+---@param reuseExisting? boolean (Reuse existing PriceGroupClass if already created <br> default:`false`)
 ---@return PriceGroupClass
-function jo.pricing.newGroup(data)
+function jo.pricing.newGroup(data, reuseExisting)
+  if reuseExisting then
+    return isPriceGroup(data) and data or PriceGroupClass.new(data)
+  end
   return PriceGroupClass.new(data)
 end
 
 --- Returns the canonical costs list for a price input.
 ---@param price PriceInput (Price input)
 ---@return Cost[]
-function jo.pricing.get(price)
-  return PriceClass.new(price):get()
+function jo.pricing.getCosts(price)
+  return PriceClass.new(price):getCosts()
 end
+
+--- Returns the canonical costs list for a price input.
+jo.pricing.get = jo.pricing.getCosts
 
 --- Splits a price into tax and remaining prices.
 ---@param price PriceInput (Price input to split)

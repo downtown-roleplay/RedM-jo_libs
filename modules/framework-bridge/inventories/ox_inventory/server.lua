@@ -26,11 +26,11 @@ end
 ---@param closeAfterUsed boolean if inventory needs to be closes
 ---@return boolean
 function jo.framework:registerUseItem(item, closeAfterUsed, callback)
-  exports.core:GetCoreObject().RegisterUsableItem(item, function(source, item)
+    exports.core:GetCoreObject().RegisterUsableItem(item, function(source, item)
     local character = exports.core:GetCoreObject().GetCharacterFromPlayerId(source)
     if character then
     if closeAfterUsed then
-        character.triggerEvent('ox_inventory:closeInventory')
+      character.triggerEvent('ox_inventory:closeInventory')
       end
 
       callback(source, item)
