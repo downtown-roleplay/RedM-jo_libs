@@ -1,6 +1,6 @@
 author "JUMP ON studios : https://jumpon-studios.com"
 documentation "https://docs.jumpon-studios.com"
-version "2.13.1"
+version "2.14.0"
 package_id "1"
 
 fx_version "cerulean"
@@ -40,6 +40,8 @@ files {
 	"nui/**/**.webp",
 	"nui/**/**.mp3",
 	"nui/**/**.gif",
+	--Locales
+	"locales/**"
 }
 
 ui_page "nui://jo_libs/nui/index.html"
@@ -49,7 +51,8 @@ shared_scripts {
 }
 
 jo_libs {
-	"version-checker"
+	"version-checker",
+	"i18n",
 }
 
 dependencies {

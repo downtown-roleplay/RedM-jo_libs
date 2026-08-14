@@ -309,9 +309,11 @@ end
 
 ---@param job string
 ---@param grade number
----@return boolean success
+---@return boolean result of job and grade assignment
 function jo.framework.UserClass:setJob(job, grade)
-  return self.data.setJob(job) and self.data.setJobGrade(grade)
+  local a = self.data.setJob(job)
+  local b = self.data.setJobGrade(grade)
+  return a and b
 end
 
 ---@return string name
@@ -1205,7 +1207,7 @@ function jo.framework:updateUserClothesInternal(source, clothes, overwrite)
     end
   end
   local user = self.UserClass:get(source)
-  local tints = overwrite and {} or UnJson(user.data.comptTints)
+  local tints = overwrite and {} or UnJson(user.data.compTints)
   for category, value in pairs(clothes) do
     if type(value) == "table" and GetValue(value?.hash, 0) ~= 0 then
       local tint = {
