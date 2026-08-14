@@ -19,12 +19,19 @@ end
 ---@param dict string (The dictionnary of the animation)
 ---@param name string (The name of the animation)
 ---@param duration? integer (Duration of the animation in ms - default:-1)
----@param flag? integer (The flag of the animation - default:0)
----@param offset? float (The offset of the animation 0.0 <> 1.0 - default: 0.0)
+---@param flag? integer|table (Animation flags - default:0. Pass an integer value or a table of bit indices (e.g. {0,3}).
+---@param offset? number (The offset of the animation 0.0 <> 1.0 - default: 0.0)
 ---@return number
 function jo.animation.play(ped, dict, name, duration, flag, offset)
   if not duration then duration = -1 end
   if not flag then flag = 0 end
+  if type(flag) == "table" then
+    local flagValue = 0
+    for i = 1, #flag do
+      flagValue = flagValue | (1 << flag[i])
+    end
+    flag = flagValue
+  end
   if not offset then offset = 0.0 end
   jo.animation.load(dict, true)
   TaskPlayAnim(ped, dict, name, jo.animation.easeIn, jo.animation.easeOut, duration, flag, offset, false, false, false)
@@ -34,9 +41,9 @@ end
 --- Function to move a ped to a destination
 ---@param ped integer (The ped to move)
 ---@param coords vector (vec3 or vec4 - The coordinate of the destination <br> If vector4 is used, the ped will stop at the end and turn to the desired heading)
----@param speed? float (The speed of the walk - default:1.0)
+---@param speed? number (The speed of the walk - default:1.0)
 ---@param waiter? boolean (If need to wait the reach of location to end the function - default:false)
----@param distanceToStop? float (The distance between the ped and the destination to stop it - default:0.0)
+---@param distanceToStop? number (The distance between the ped and the destination to stop it - default:0.0)
 function jo.animation.goToCoords(ped, coords, speed, waiter, distanceToStop)
   speed = speed or 1.0
   if waiter or type(coords) == "vector4" then

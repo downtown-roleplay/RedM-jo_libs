@@ -27,6 +27,11 @@ jo.component.data.pedCategories = {
   "bodies_upper",
   "bodies_lower",
   "hair",
+  "hair_bonnet",
+  "beards",
+  "beards_chin",
+  "beards_chops",
+  "beards_mustache",
   "beards_complete",
   "ponchos",
   "cloaks",
@@ -125,6 +130,11 @@ end
 
 local categoryNotClothes = {
   hair = true,
+  beards = true,
+  hair_bonnet = true,
+  beards_chin = true,
+  beards_chops = true,
+  beards_mustache = true,
   beards_complete = true,
   teeth = true,
   heads = true,
@@ -237,6 +247,7 @@ jo.component.data.wearableStates = {
     "shirt_009",
     "closed_collar_rolled_sleeve_vest_coat_open",
     "closed_collar_rolled_sleeve_coat_open",
+    "hidden"
   }
 }
 jo.component.data.wearableStatesName = {}
@@ -290,6 +301,10 @@ jo.component.data.palettes = {
   "metaped_tint_skirt_worn",
   "metaped_tint_si_template",
   "metaped_tint_teeth",
+  "metaped_tint_swatch_000",
+  "metaped_tint_swatch_001",
+  "metaped_tint_swatch_002",
+  "metaped_tint_swatch_003",
 }
 jo.component.palettes = jo.component.data.palettes --deprecated name
 jo.component.data.palettesName = {}
@@ -355,16 +370,13 @@ jo.component.data.expressions = {
   mouthConerRightLipsDistance = 60292,
 
   arms = 46032,
-  forearms = 8420,
   chest = 27779,
   hip = 49787,
-  buttHips = 8991,
   neckDepth = 60890,
   neckWidth = 36277,
   shoulderBlades = 18046,
   shoulders = 50039,
   shoulderThickness = 7010,
-  trapeziusFront = 33485,
   waist = 50460,
 
   calves = 42067,

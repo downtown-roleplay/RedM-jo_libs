@@ -21,6 +21,7 @@ local menus = {}
 local menuCreators = {}
 jo.menu.listeners = {}
 local nuiShow = false
+local softHidden = false
 local timeoutClose = nil
 local currentMinimapType = GetMinimapType()
 local currentData = {}
@@ -89,7 +90,6 @@ local function menuNUIChange(data)
 
   local waiter = function()
     while menuNuiChangeInProgress do Wait(10) end
-    Wait(100)
   end
 
   if not currentData.item.bufferOnChange or table.find(currentData.item.sliders, function(slider) return slider.type == "grid" end) then
@@ -99,35 +99,39 @@ local function menuNUIChange(data)
   jo.timeout.noSpam("menuNUIChange", waiter, function()
     menuNuiChangeInProgress = true
 
+    -- Snapshot: currentData is overwritten by newer NUI events while this
+    -- callback yields, and previousData must match the data fired here
+    local current = { menu = currentData.menu, index = currentData.index, item = currentData.item }
+
     local oldButton = false
     if previousData.menu then
       oldButton = previousData.item
     end
 
-    if previousData.menu ~= currentData.menu or data.forceMenuEvent then
+    if previousData.menu ~= current.menu or data.forceMenuEvent then
       if oldButton then
         jo.menu.fireEvent(oldButton, "onExit")
         jo.menu.fireEvent(menus[previousData.menu], "onExit")
       end
-      jo.menu.fireEvent(menus[currentData.menu], "onEnter")
-      jo.menu.fireEvent(currentData.item, "onActive")
+      jo.menu.fireEvent(menus[current.menu], "onEnter")
+      jo.menu.fireEvent(current.item, "onActive")
     else
-      if previousData.index ~= currentData.index or data.forceItemEvent then
+      if previousData.index ~= current.index or data.forceItemEvent then
         if oldButton then
           jo.menu.fireEvent(oldButton, "onExit")
         end
-        jo.menu.fireEvent(currentData.item, "onActive")
+        jo.menu.fireEvent(current.item, "onActive")
       else
-        jo.menu.fireEvent(currentData.item, "onChange")
+        jo.menu.fireEvent(current.item, "onChange")
       end
       jo.menu.fireEvent(menus[previousData.menu], "onChange")
     end
 
     for i = 1, #jo.menu.listeners do
-      jo.menu.listeners[i].cb(currentData)
+      jo.menu.listeners[i].cb(current)
     end
 
-    previousData = table.copy(currentData)
+    previousData = table.copy(current)
     menuNuiChangeInProgress = false
   end)
 end
@@ -274,7 +278,7 @@ end
 --- item.data? table (Variable to store custom data in the item)
 --- item.description? string (Description text for the item)
 --- item.prefix? string (The little icon before the title from `nui\menu\assets\images\icons` folder  ![prefix Icon](/images/previews/menu/prefixIcon.jpg))
---- item.icon? string (The left icon filename from `nui\menu\assets\images\icons` folder  ![Icon](/images/previews/menu/leftIcon.jpg))
+--- item.icon? string (The left icon filename from `nui\menu\assets\images\icons` folder, or full image URL  ![Icon](/images/previews/menu/leftIcon.jpg))
 --- item.iconRight? string (The right icon filename from `nui\menu\assets\images\icons` folder  ![icon right](/images/previews/menu/iconRight.jpg))
 --- item.iconClass? string (CSS class for the icon)
 --- item.price? table (The price of the item. Use 0 to display "free" <br> default: false  ![preview price](/images/previews/menu/price.jpg))
@@ -366,7 +370,7 @@ function jo.menu.updateItem(id, index, key, value) menus[id]:updateItem(index, k
 ---@return boolean (true if the update was successful, false otherwise)
 function MenuClass:updateValue(keys, value)
   if type(keys) ~= "table" then keys = { keys } end
-  if keys[#keys] == "price" then
+  if keys[#keys] == "price" or (keys[#keys] == "priceRight" and type(value) ~= "boolean") then
     value = jo.menu.formatPrice(value)
   end
   local v = table.copy(value)
@@ -692,14 +696,14 @@ end
 ---@param show boolean (Whether to show or hide the menu)
 ---@param keepInput? boolean (Whether to keep game input controls active <br> default: `true`)
 ---@param hideRadar? boolean (Whether to hide the radar when menu is shown <br> default: `true`)
----@param animation? boolean (Whether to use animation when showing/hiding the menu <br> default: `true`)
+---@param playMenuAnimation? boolean (Whether to use animation when showing/hiding the menu <br> default: `true`)
 ---@param hideCursor? boolean (Whether to hide the cursor <br> default: `false`)
-function jo.menu.show(show, keepInput, hideRadar, animation, hideCursor)
+function jo.menu.show(show, keepInput, hideRadar, playMenuAnimation, hideCursor)
   if show == nuiShow then return end
   CreateThread(function()
     keepInput = keepInput == nil and true or keepInput
     hideRadar = hideRadar == nil and true or hideRadar
-    animation = animation == nil and true or animation
+    playMenuAnimation = playMenuAnimation == nil and true or playMenuAnimation
     hideCursor = hideCursor or false
 
     nuiShow = show
@@ -710,13 +714,13 @@ function jo.menu.show(show, keepInput, hideRadar, animation, hideCursor)
       timeoutClose = jo.timeout.set(150, function()
         SetNuiFocus(false, false)
         SetNuiFocusKeepInput(previousKeepingInput)
-        SendNUIMessage({ event = "updateShow", show = show, cancelAnimation = not animation })
+        SendNUIMessage({ event = "updateShow", show = show, cancelAnimation = not playMenuAnimation })
       end)
     else
       previousKeepingInput = IsNuiFocusKeepingInput()
       SetNuiFocus(true, not hideCursor)
       SetNuiFocusKeepInput(keepInput)
-      SendNUIMessage({ event = "updateShow", show = show, cancelAnimation = not animation })
+      SendNUIMessage({ event = "updateShow", show = show, cancelAnimation = not playMenuAnimation })
       loopMenu()
     end
     if show then
@@ -818,23 +822,30 @@ end
 
 --- A function to hide temporary the menu and do action
 ---@param cb function (Action executed before show again the menu)
----@param animation? boolean (Whether to use animation when showing/hiding the menu <br> default: `true`)
-function jo.menu.softHide(cb, animation)
-  animation = GetValue(animation, true)
+---@param playMenuAnimation? boolean (Whether to use animation when showing/hiding the menu <br> default: `true`)
+function jo.menu.softHide(cb, playMenuAnimation, keepBackground)
+  playMenuAnimation = GetValue(playMenuAnimation, true)
+  keepBackground = GetValue(keepBackground, false)
   if not cb then return end
+  softHidden = true
   local keepInput = IsNuiFocusKeepingInput()
   local hideCursor = false
 
   SetNuiFocus(false, false)
   SetNuiFocusKeepInput(false)
-  SendNUIMessage({ event = "updateShow", show = false, cancelAnimation = not animation })
+  SendNUIMessage({ event = "updateShow", show = false, cancelAnimation = not playMenuAnimation, keepBackground = keepBackground })
 
   cb()
   Wait(1)
 
   SetNuiFocus(true, not hideCursor)
   SetNuiFocusKeepInput(keepInput)
-  SendNUIMessage({ event = "updateShow", show = true, cancelAnimation = not animation })
+  SendNUIMessage({ event = "updateShow", show = true, cancelAnimation = not playMenuAnimation })
+  softHidden = false
+end
+
+function jo.menu.isSoftHidden()
+  return softHidden
 end
 
 --- A function to know if the menu is the current one

@@ -37,6 +37,7 @@ local forcedHide = false
 
 local function doesKeyIsInVisiblePrompt(prompt, keys)
     if not prompt.visible then return false end
+    if prompt.type == "separator" or not prompt.keyboardKeys then return false end
     for k = 1, #keys do
         if table.find(prompt.keyboardKeys, keys[k]) then
             return true, keys[k]
@@ -45,12 +46,11 @@ local function doesKeyIsInVisiblePrompt(prompt, keys)
     return false
 end
 
-local function keyDown(vk)
+local function keyDown(key)
     if not currentGroupVisible then return end
     local group = currentGroupVisible
     local page = group.currentPage
     local prompts = group.prompts[page]
-    local key = jo.rawKeys.getKeyFromVK(vk)
     if not key then return end
     local alias = jo.rawKeys.getAliasFromStandardKey(key)
     local keys = { key }
@@ -79,8 +79,8 @@ local function keyDown(vk)
     end
 end
 
-local function keyUp(vk)
-    local key = jo.rawKeys.getKeyFromVK(vk)
+local function keyUp(key)
+    if not key then return end
     SendNUIMessage({
         type = "keyUp",
         data = {
@@ -103,8 +103,8 @@ CreateThread(function()
     while not nuiLoaded do Wait(100) end
     for k = 1, #vks do
         local vk = vks[k]
-        local listener = jo.rawKeys.listen(vk, function(isPressed)
-            if isPressed then keyDown(vk) else keyUp(vk) end
+        local listener = jo.rawKeys.listen(vk, function(isPressed, key)
+            if isPressed then keyDown(key) else keyUp(key) end
         end)
         table.insert(vk_listener, listener)
     end
@@ -124,6 +124,7 @@ end)
 ---@field label string
 ---@field keyboardKeys string[]
 ---@field holdTime number|false
+---@field price table|boolean
 ---@field disabled boolean
 ---@field visible boolean
 ---@field page number
@@ -138,6 +139,7 @@ function PromptClass:new()
         label = "",
         keyboardKeys = {},
         holdTime = false,
+        price = false,
         disabled = false,
         visible = true,
         page = -1,
@@ -215,6 +217,15 @@ function PromptClass:setHoldTime(holdTime)
     self:refreshNUI("holdTime")
 end
 
+--- Sets the prompt price and formats it with the shared pricing structure.
+--- @param price table|integer|number|boolean|nil (The prompt price. Set it to `false` if no price is required)
+function PromptClass:setPrice(price)
+    jo.require("framework")
+    jo.require("pricing")
+    self.price = price and jo.framework:addItemDataToPrice(jo.pricing.new(price):getCosts()) or false
+    self:refreshNUI("price")
+end
+
 -- * =============================================================================
 -- * GROUP
 -- * =============================================================================
@@ -284,33 +295,54 @@ function GroupClass:isVisible()
     return self.visible
 end
 
+local function ensurePromptPage(group, page)
+    if not group.prompts[page] then
+        for i = 1, page do
+            group.prompts[i] = group.prompts[i] or {}
+        end
+    end
+end
+
 --- Adds a new prompt to the group on a specified page. <br>Creates or initializes pages as necessary, assigns the prompt's position, and returns the new prompt.
 --- @param key string (A key string for the prompt.)
 --- @param label string (The descriptive label for the prompt.)
 --- @param holdTime number|boolean (Duration to hold the key before the prompt triggers. <br> Set it to `false` if no hold time is required)
 --- @param page? number (The page number to add the prompt to<br> defaults to 1.)
+--- @param price? table|integer|number|boolean (The price to display next to the prompt label. Uses the shared pricing structure <br> defaults to false.)
 --- @return PromptClass (The newly created prompt object.)
-function GroupClass:addPrompt(key, label, holdTime, page)
+function GroupClass:addPrompt(key, label, holdTime, page, price)
     local prompt = PromptClass:new()
     key = key:lower()
     prompt.groupId = self.id
     prompt:setLabel(label)
     prompt:setKeyboardKeys(key)
     prompt:setHoldTime(holdTime)
+    prompt:setPrice(price)
 
     page = page or 1
 
-    if not self.prompts[page] then
-        for i = 1, page do
-            self.prompts[i] = self.prompts[i] or {}
-        end
-    end
+    ensurePromptPage(self, page)
 
     table.insert(self.prompts[page], prompt)
     prompt.page = page
     prompt.position = #self.prompts[page]
 
     return prompt
+end
+
+--- Adds a visual separator to the group on a specified page.
+--- @param page? number (The page number to add the separator to<br> defaults to 1.)
+function GroupClass:addSeparator(page)
+    page = page or 1
+    ensurePromptPage(self, page)
+
+    local separator = {
+        type = "separator",
+        visible = true,
+        page = page,
+        position = #self.prompts[page] + 1
+    }
+    table.insert(self.prompts[page], separator)
 end
 
 local function isForcedHide()
@@ -478,21 +510,18 @@ end
 -- * RegisterNUICallback for NUI Driven
 -- * ===============================================================================
 RegisterNUICallback("keyCompleted", function(data, cb)
-    -- log("keyCompleted", data)
     local key = data.kkey:lower()
     keysCompleted[key] = GetGameTimer()
     cb({ ok = "ok" })
 end)
 
 RegisterNUICallback("keyUp", function(data, cb)
-    -- log("keyCompleted", data)
     local key = data.kkey:lower()
     keysCompleted[key] = nil
     cb({ ok = "ok" })
 end)
 
 RegisterNUICallback("keyDown", function(data, cb)
-    -- log("keyCompleted", data)
     local key = data.kkey:lower()
     keysCompleted[key] = nil
     cb({ ok = "ok" })

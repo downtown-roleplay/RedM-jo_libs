@@ -3,19 +3,26 @@ jo.require("string")
 jo.require("math")
 jo.require("callback")
 
--- -----------
--- LOAD FRAMEWORK
--- -----------
-
 ---@class UserClass
 jo.framework.UserClass = {}
 
-jo.framework:loadFile("UserClass")
-jo.framework:loadFile("FrameworkClass")
+-------------
+-- VARIABLES
+-------------
+local SourceFromIdentifiers = {}
+local IdentifiersFromSource = {}
 
--- -----------
--- END LOAD FRAMEWORK
--- -----------
+------------
+-- CORE
+------------
+
+jo.framework:loadCoreFiles("server")
+
+-------------
+-- Inventories
+-------------
+jo.framework:loadInventoryFiles("server")
+
 
 -- -----------
 -- POWER UP FUNCTIONS
@@ -68,7 +75,9 @@ end
 ---@param name string (The name of the framework to check against <br> Supported frameworks : <br> `"VORP"` or `"RedEM"` or `"RedEM2023"` or `"qbr"` or `"rsg"` or `"qr"` or `"rpx"`)
 ---@return boolean (Return `true` if the current framework matches the name)
 function jo.framework:is(name)
-  return self:get() == name
+  local coreId = self:get()
+  if not coreId then return false end
+  return coreId:lower() == name:lower()
 end
 
 --- Retrieves a player's full UserClass object containing all player data and methods
@@ -89,6 +98,7 @@ function jo.framework:getUserIdentifiers(source)
   end
   return user:getIdentifiers()
 end
+
 jo.callback.register(jo.resourceName .. ":server:framework:getPlayerIdentifiers", function(source, playerId)
   return jo.framework:getUserIdentifiers(playerId or source)
 end)
@@ -156,6 +166,15 @@ end
 ---@return boolean, number (Return `true` if the player can pay the prices and the index of the price that the player can't pay)
 ---@ignore
 function jo.framework:canUserPayWith(source, prices, removeIfCan)
+  jo.require("pricing")
+  local success, normalizedPrices = pcall(jo.pricing.get, prices)
+  if not success then
+    eprint("jo.framework:canUserPayWith: Invalid prices: %s", normalizedPrices)
+    return false
+  end
+
+  prices = normalizedPrices
+
   if type(prices) ~= "table" then
     eprint("jo.framework:canUserBuyMultiples: Wrong prices type. Need to be a table")
     eprint("Use jo.framework:canUserBuy() instead")
@@ -206,7 +225,16 @@ end
 ---@param prices table (The prices to refund)
 ---@return nil
 function jo.framework:refundUserWith(source, prices)
-  if type(prices) ~= "table" then return end
+  jo.require("pricing")
+  local success, normalizedPrices = pcall(jo.pricing.get, prices)
+  if not success then
+    eprint("jo.framework:refundUserWith: Invalid prices: %s", normalizedPrices)
+    return false
+  end
+
+  prices = normalizedPrices
+
+  if type(prices) ~= "table" then return false end
   if table.type(prices) ~= "array" then prices = { prices } end
 
   for i = 1, #prices do
@@ -432,6 +460,21 @@ function jo.framework:standardizeSkin(skin)
   if standard.beards_complete and type(standard.beards_complete) ~= "table" then
     standard.beards_complete = { hash = standard.beards_complete }
   end
+  if standard.beards_chin and type(standard.beards_chin) ~= "table" then
+    standard.beards_chin = { hash = standard.beards_chin }
+  end
+  if standard.beards_chops and type(standard.beards_chops) ~= "table" then
+    standard.beards_chops = { hash = standard.beards_chops }
+  end
+  if standard.beards_mustache and type(standard.beards_mustache) ~= "table" then
+    standard.beards_mustache = { hash = standard.beards_mustache }
+  end
+  if standard.beards and type(standard.beards) ~= "table" then
+    standard.beards = { hash = standard.beards }
+  end
+  if standard.hair_bonnet and type(standard.hair_bonnet) ~= "table" then
+    standard.hair_bonnet = { hash = standard.hair_bonnet }
+  end
 
   if jo.debug then
     if table.count(skin) > 0 then
@@ -466,6 +509,22 @@ function jo.framework:revertSkin(standard)
   if table.count(skin.expressions) == 0 then
     skin.expressions = nil
   end
+  if standard.beards_chin ~= nil then
+    skin.beards_chin = table.extract(standard, "beards_chin")
+  end
+  if standard.beards_chops ~= nil then
+    skin.beards_chops = table.extract(standard, "beards_chops")
+  end
+  if standard.beards_mustache ~= nil then
+    skin.beards_mustache = table.extract(standard, "beards_mustache")
+  end
+  if standard.beards ~= nil then
+    skin.beards = table.extract(standard, "beards")
+  end
+  if standard.hair_bonnet ~= nil then
+    skin.hair_bonnet = table.extract(standard, "hair_bonnet")
+  end
+
 
   if jo.debug then
     if table.count(standard) > 0 then
@@ -556,21 +615,21 @@ function jo.framework:updateUserSkin(...)
   self:updateUserSkinInternal(source, skin, overwrite)
 end
 
--- -----------
--- END POWER UP FUNCTIONS
--- -----------
+local charSelectedCallbacks = {}
 
--- -----------
--- LOAD CUSTOM FUNCTIONS
--- -----------
-jo.framework:loadFile("_custom", "UserClass")
-jo.framework:loadFile("_custom", "FrameworkClass")
+---@autodoc:config ignore:true
+function ExecCharacterSelectedCallback(source, isNew)
+  isNew = GetValue(isNew, false)
+  for i = 1, #charSelectedCallbacks do
+    charSelectedCallbacks[i](source, isNew)
+  end
+end
 
-jo.framework:loadFile("server")
-jo.framework:loadFile("_custom", "server")
-
-local SourceFromIdentifiers = {}
-local IdentifiersFromSource = {}
+--- Callback when a character is selected
+--- @param cb function (The callback function triggered when the character is selected, contains (source:integer, isNew:boolean))
+function jo.framework:onCharacterSelected(cb)
+  table.insert(charSelectedCallbacks, cb)
+end
 
 local function generateKey(identifier, charid)
   return ("%s|%s"):format(identifier, charid)
@@ -604,6 +663,11 @@ CreateThread(function()
   end
 end)
 
+AddEventHandler("playerDropped", function()
+  local source = source
+  dropIdentifiersLink(source)
+end)
+
 --- Retrieves the source ID from identifiers
 ---@param identifier string (The identifier to search for)
 ---@param charid string (The character ID to search for)
@@ -612,11 +676,6 @@ function jo.framework:getSourceFromIdentifiers(identifier, charid)
   local key = generateKey(identifier, charid)
   return SourceFromIdentifiers[key] or false
 end
-
-AddEventHandler("playerDropped", function()
-  local source = source
-  dropIdentifiersLink(source)
-end)
 
 --- Merge inventory configuration
 ---@param ... table (The inventory configurations to merge)

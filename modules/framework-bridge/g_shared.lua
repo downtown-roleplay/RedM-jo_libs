@@ -1,7 +1,17 @@
-jo.framework:loadFile("g_shared")
-jo.framework:loadFile("_custom", "g_shared")
-
+-------------
+-- VARIABLES
+-------------
 local initInventoryItemsInProcess = false
+
+-------------
+-- CORE
+-------------
+jo.framework:loadCoreFiles("g_shared")
+
+-------------
+-- INVENTORIES
+-------------
+jo.framework:loadInventoryFiles("g_shared")
 
 ---@return table (The list of items)
 exports("jo_framework_getInventoryItems", function()

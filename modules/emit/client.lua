@@ -41,7 +41,9 @@ end
 jo.emit.triggerServer = setmetatable({
   latent = triggerServerLatent
 }, {
-  __call = triggerServer
+  __call = function(_, ...)
+    triggerServer(...)
+  end
 })
 
 --- A function to check if an event is currently getting data with emit module
@@ -62,6 +64,7 @@ RegisterNetEvent("jo_libs:client:emit:start", function(eventName)
   end)
 end)
 
+---@deprecated since v2.12.2. Unsafe: the server relays this without validation, so any client can trigger arbitrary events on any client. Use a server-authoritative event instead.
 --- A function to trigger client(s)
 ---@param eventName string (The event name)
 ---@param source integer|table (The player ID or list of players ID)
