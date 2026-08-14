@@ -29,12 +29,12 @@ return {
     folder = "qbr-inventory",
     matchResources = { "qbr-inventory" },
   },
-  {
-    id = "rsg",
-    name = "RSG Inventory",
-    folder = "rsg-inventory",
-    matchResources = { "rsg-inventory<2.0.0" },
-  },
+  -- {
+  --   id = "rsg",
+  --   name = "RSG Inventory",
+  --   folder = "rsg-inventory",
+  --   matchResources = { "rsg-inventory<2.0.0" },
+  -- },
   {
     id = "rsg_v2",
     name = "RSG Inventory V2",
@@ -62,8 +62,8 @@ return {
   {
     id = "ox",
     name = "OX Inventory",
-    folder = "ox_inventory",
-    matchResources = { "ox_inventory" }
+    folder = "inventory",
+    matchResources = { "inventory" }
   },
   {
     id = "gm",
