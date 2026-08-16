@@ -78,6 +78,9 @@ function jo.entity.fadeOut(entity, duration)
 	if IsEntityAVehicle(entity) then
 		local model = GetEntityModel(entity)
 		local horseCount = GetNumDraftVehicleHarnessPed(model)
+		if type(horseCount) ~= "number" then
+			horseCount = 0
+		end
 		for i = 0, horseCount - 1 do
 			horses[#horses + 1] = GetPedInDraftHarness(entity, i)
 		end
