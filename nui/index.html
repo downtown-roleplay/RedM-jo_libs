@@ -123,6 +123,19 @@
     frame.tabIndex = -1;
     frame.style.overflow = "hidden"
 
+    
+    frame.addEventListener('load', () => {
+       fetch(`https://${resourceName}/jo_nui_loaded`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json; charset=UTF-8',
+            },
+            body: JSON.stringify({
+                uiName: uiName
+            }),
+        });
+    });
+
     document.body.appendChild(frame);
 
     frame.contentWindow.GetParentResourceName = function () {

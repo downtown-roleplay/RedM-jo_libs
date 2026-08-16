@@ -12,7 +12,6 @@ function jo.nui.load(uiName, url)
   if (not url:find("://")) then url = "nui://" .. url end
   if nuiLoaded[uiName] then return eprint("This nui is already loaded:", uiName) end
 
-  nuiLoaded[uiName] = true
   SendNUIMessage({
     action = "jo_nui_loadNUI",
     url = url,
@@ -59,6 +58,13 @@ end
 
 RegisterNUICallback("jo_nui_is_hovering", function(data, cb)
   hovering = data.hovering
+  cb("ok")
+end)
+
+RegisterNuiCallback('jo_nui_loaded', function(data, cb)
+  if data and data.uiName then
+    nuiLoaded[data.uiName] = true
+  end
   cb("ok")
 end)
 
