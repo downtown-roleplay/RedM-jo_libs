@@ -434,8 +434,12 @@ function jo.framework:standardizeClothesInternal(clothes)
     hair = table.extract(clothes, "Hair"),
     hats = table.extract(clothes, "Hat"),
     holsters_left = table.extract(clothes, "Holster"),
+    holsters_right = table.extract(clothes, "HolsterRight"),
     loadouts = table.extract(clothes, "Loadouts"),
     masks = table.extract(clothes, "Mask"),
+    masks_large = table.extract(clothes, "MasksLarge"),
+    aprons = table.extract(clothes, "Aprons"),
+    outfits = table.extract(clothes, "Outfits"),
     neckties = table.extract(clothes, "NeckTies"),
     neckwear = table.extract(clothes, "NeckWear"),
     pants = table.extract(clothes, "Pant"),
@@ -478,8 +482,12 @@ function jo.framework:revertClothesInternal(standard)
     Hair = table.extract(standard, "hair"),
     Hat = table.extract(standard, "hats"),
     Holster = table.extract(standard, "holsters_left"),
+    HolsterRight = table.extract(standard, "holsters_right"),
     Loadouts = table.extract(standard, "loadouts"),
     Mask = table.extract(standard, "masks"),
+    MasksLarge = table.extract(standard, "masks_large"),
+    Aprons = table.extract(standard, "aprons"),
+    Outfits = table.extract(standard, "outfits"),
     NeckTies = table.extract(standard, "neckties"),
     NeckWear = table.extract(standard, "neckwear"),
     Pant = table.extract(standard, "pants"),
@@ -1135,29 +1143,18 @@ function jo.framework:getUserClothesInternal(source)
   local character = Core.GetCharacterFromPlayerId(source)
   if not character then return {} end
 
-  local result = MySQL.single.await(
-    "SELECT clothes, tints FROM characters_outfit WHERE ownerId=?",
-    { character.id }
-  )
-
-  if not result then return {} end
-
-  local clothes = UnJson(result.clothes) or {}
-  local clothesTints = UnJson(result.tints) or {}
-
-  for category, data in pairs(clothesTints) do
-    for hash, tintData in pairs(data) do
-      if tonumber(clothes[category]) == tonumber(hash) then
-        clothes[category] = {
-          hash = clothes[category]
-        }
-
-        table.merge(clothes[category], tintData)
-      end
-    end
+  -- Fonte única: slots de roupa do inventário (clothing-<characterId>).
+  -- GetEquippedClothes devolve { category = { hash = number|table } } com as mesmas
+  -- categorias do jo_clothingstore (hats, coats, masks_large, outfits, ...).
+  local ok, clothes = pcall(exports.inventory.GetEquippedClothes, exports.inventory, source)
+  if not ok or type(clothes) ~= "table" then
+    return {}
   end
 
-  return clothes
+  -- O contrato do Internal é o formato VORP (chaves capitalizadas); o getUserClothes público
+  -- aplica standardizeClothes em cima. revertClothes preserva chaves não mapeadas (bodies_upper,
+  -- bodies_lower, ...) no output.
+  return self:revertClothes(clothes)
 end
 
 function jo.framework:updateUserClothesInternal(source, clothes, overwrite)
