@@ -642,6 +642,11 @@ function jo.menu.isOpen()
   return nuiShow
 end
 
+---@return MenuClass[]
+function jo.menu.getAll()
+  return menus
+end
+
 --- Set a menu as the current active menu
 ---@param id string (ID of the menu to activate)
 ---@param keepHistoric? boolean (Keep the menu navigation history <br> default: `true`)
