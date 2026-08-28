@@ -567,6 +567,28 @@ function jo.component.applyComponents(ped, components)
 
   jo.component.removeAllClothes(ped)
 
+  -- Outfit completo equipado (categoria "outfits"): a tabela do outfit e plana
+  -- { categoria = hash, ... }, diferente de um componente unico { hash = ... }.
+  -- O outfit e EXCLUSIVO: quando presente, as pecas individuais dos slots nao
+  -- sao aplicadas (aplica so o outfit e retorna).
+  local outfit = components.outfits
+  if type(outfit) == "table" and next(outfit) then
+    for subCat, subData in pairs(outfit) do
+      if subCat ~= "outfits" then
+        jo.component.apply(ped, subCat, subData)
+      end
+    end
+    jo.component.waitPedLoaded(ped)
+
+    -- Peça full-body do outfit, se existir
+    if type(outfit.outfits) == "table" and (outfit.outfits.drawable or outfit.outfits.hash) then
+      jo.component.apply(ped, "outfits", outfit.outfits)
+    end
+
+    jo.component.refreshPed(ped)
+    return
+  end
+
   for i = 1, #jo.component.data.pedClothes do
     local category = jo.component.data.pedClothes[i]
     if components[category] then

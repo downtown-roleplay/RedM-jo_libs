@@ -410,99 +410,93 @@ local function getBodyLowerHash(sex, skin)
   return skin.LegsType, 1, 1
 end
 
+-- Mapa VORP (capitalizado) -> jo_libs (lowercase), usado tanto nas chaves de topo
+-- quanto recursivamente dentro da tabela do outfit (Outfits).
+local CLOTHES_KEY_MAP = {
+  Accessories = "accessories",
+  Armor = "armor",
+  Badge = "badges",
+  Beard = "beards_complete",
+  Belt = "belts",
+  Boots = "boots",
+  Bow = "hair_accessories",
+  Bracelet = "jewelry_bracelets",
+  Buckle = "belt_buckles",
+  Chap = "chaps",
+  Cloak = "cloaks",
+  Coat = "coats",
+  CoatClosed = "coats_closed",
+  Dress = "dresses",
+  EyeWear = "eyewear",
+  Gauntlets = "gauntlets",
+  Glove = "gloves",
+  Gunbelt = "gunbelts",
+  GunbeltAccs = "gunbelt_accs",
+  Hair = "hair",
+  Hat = "hats",
+  Holster = "holsters_left",
+  HolsterRight = "holsters_right",
+  Loadouts = "loadouts",
+  Mask = "masks",
+  MasksLarge = "masks_large",
+  Aprons = "aprons",
+  Outfits = "outfits",
+  NeckTies = "neckties",
+  NeckWear = "neckwear",
+  Pant = "pants",
+  Poncho = "ponchos",
+  RingLh = "jewelry_rings_left",
+  RingRh = "jewelry_rings_right",
+  Satchels = "satchels",
+  Shirt = "shirts_full",
+  Skirt = "skirts",
+  Spats = "spats",
+  Spurs = "boot_accessories",
+  Suspender = "suspenders",
+  Teeth = "teeth",
+  Vest = "vests",
+}
+
+local REVERT_CLOTHES_KEY_MAP = {}
+for vorpKey, standardKey in pairs(CLOTHES_KEY_MAP) do
+  REVERT_CLOTHES_KEY_MAP[standardKey] = vorpKey
+end
+
+---Converte as chaves internas da tabela do outfit (Outfits) para o formato alvo,
+---sem tocar nas chaves que não estão no mapa (ex.: bodies_upper, wearableState).
+---@param outfit table tabela plana do outfit (categoria -> hash/dados)
+---@param mapping table mapa de conversão de chaves
+---@return table
+local function convertOutfitKeys(outfit, mapping)
+  if type(outfit) ~= "table" then return outfit end
+  local converted = {}
+  for key, value in pairs(outfit) do
+    converted[mapping[key] or key] = value
+  end
+  return converted
+end
+
 function jo.framework:standardizeClothesInternal(clothes)
-  local standard = {
-    accessories = table.extract(clothes, "Accessories"),
-    armor = table.extract(clothes, "Armor"),
-    badges = table.extract(clothes, "Badge"),
-    beards_complete = table.extract(clothes, "Beard"),
-    belts = table.extract(clothes, "Belt"),
-    boots = table.extract(clothes, "Boots"),
-    hair_accessories = table.extract(clothes, "Bow"),
-    jewelry_bracelets = table.extract(clothes, "Bracelet"),
-    chaps = table.extract(clothes, "Chap"),
-    belt_buckles = table.extract(clothes, "Buckle"),
-    cloaks = table.extract(clothes, "Cloak"),
-    coats = table.extract(clothes, "Coat"),
-    coats_closed = table.extract(clothes, "CoatClosed"),
-    dresses = table.extract(clothes, "Dress"),
-    eyewear = table.extract(clothes, "EyeWear"),
-    gauntlets = table.extract(clothes, "Gauntlets"),
-    gloves = table.extract(clothes, "Glove"),
-    gunbelts = table.extract(clothes, "Gunbelt"),
-    gunbelt_accs = table.extract(clothes, "GunbeltAccs"),
-    hair = table.extract(clothes, "Hair"),
-    hats = table.extract(clothes, "Hat"),
-    holsters_left = table.extract(clothes, "Holster"),
-    holsters_right = table.extract(clothes, "HolsterRight"),
-    loadouts = table.extract(clothes, "Loadouts"),
-    masks = table.extract(clothes, "Mask"),
-    masks_large = table.extract(clothes, "MasksLarge"),
-    aprons = table.extract(clothes, "Aprons"),
-    outfits = table.extract(clothes, "Outfits"),
-    neckties = table.extract(clothes, "NeckTies"),
-    neckwear = table.extract(clothes, "NeckWear"),
-    pants = table.extract(clothes, "Pant"),
-    ponchos = table.extract(clothes, "Poncho"),
-    jewelry_rings_left = table.extract(clothes, "RingLh"),
-    jewelry_rings_right = table.extract(clothes, "RingRh"),
-    satchels = table.extract(clothes, "Satchels"),
-    shirts_full = table.extract(clothes, "Shirt"),
-    skirts = table.extract(clothes, "Skirt"),
-    spats = table.extract(clothes, "Spats"),
-    boot_accessories = table.extract(clothes, "Spurs"),
-    suspenders = table.extract(clothes, "Suspender"),
-    teeth = table.extract(clothes, "Teeth"),
-    vests = table.extract(clothes, "Vest"),
-  }
+  -- Gera o mapeamento a partir do CLOTHES_KEY_MAP (VORP -> lowercase): uma fonte
+  -- única, sem repetir as chaves à mão. Aceita também a chave já lowercase como
+  -- fallback (ex.: dados vindos direto do inventário).
+  local standard = {}
+  for vorpKey, standardKey in pairs(CLOTHES_KEY_MAP) do
+    standard[standardKey] = table.extract(clothes, vorpKey) or table.extract(clothes, standardKey)
+  end
+  -- Converte as chaves internas do outfit recursivamente (Outfits -> outfits)
+  standard.outfits = convertOutfitKeys(standard.outfits, CLOTHES_KEY_MAP)
   return standard
 end
 
 function jo.framework:revertClothesInternal(standard)
-  local reverted = {
-    Accessories = table.extract(standard, "accessories"),
-    Armor = table.extract(standard, "armor"),
-    Badge = table.extract(standard, "badges"),
-    Beard = table.extract(standard, "beards_complete"),
-    Belt = table.extract(standard, "belts"),
-    Boots = table.extract(standard, "boots"),
-    Bow = table.extract(standard, "hair_accessories"),
-    Bracelet = table.extract(standard, "jewelry_bracelets"),
-    Buckle = table.extract(standard, "belt_buckles"),
-    Chap = table.extract(standard, "chaps"),
-    Cloak = table.extract(standard, "cloaks"),
-    Coat = table.extract(standard, "coats"),
-    CoatClosed = table.extract(standard, "coats_closed"),
-    Dress = table.extract(standard, "dresses"),
-    EyeWear = table.extract(standard, "eyewear"),
-    Gauntlets = table.extract(standard, "gauntlets"),
-    Glove = table.extract(standard, "gloves"),
-    Gunbelt = table.extract(standard, "gunbelts"),
-    GunbeltAccs = table.extract(standard, "gunbelt_accs"),
-    Hair = table.extract(standard, "hair"),
-    Hat = table.extract(standard, "hats"),
-    Holster = table.extract(standard, "holsters_left"),
-    HolsterRight = table.extract(standard, "holsters_right"),
-    Loadouts = table.extract(standard, "loadouts"),
-    Mask = table.extract(standard, "masks"),
-    MasksLarge = table.extract(standard, "masks_large"),
-    Aprons = table.extract(standard, "aprons"),
-    Outfits = table.extract(standard, "outfits"),
-    NeckTies = table.extract(standard, "neckties"),
-    NeckWear = table.extract(standard, "neckwear"),
-    Pant = table.extract(standard, "pants"),
-    Poncho = table.extract(standard, "ponchos"),
-    RingLh = table.extract(standard, "jewelry_rings_left"),
-    RingRh = table.extract(standard, "jewelry_rings_right"),
-    Satchels = table.extract(standard, "satchels"),
-    Shirt = table.extract(standard, "shirts_full"),
-    Skirt = table.extract(standard, "skirts"),
-    Spats = table.extract(standard, "spats"),
-    Spurs = table.extract(standard, "boot_accessories"),
-    Suspender = table.extract(standard, "suspenders"),
-    Teeth = table.extract(standard, "teeth"),
-    Vest = table.extract(standard, "vests")
-  }
+  -- Inverso: gera a partir do REVERT_CLOTHES_KEY_MAP (lowercase -> VORP)
+  local reverted = {}
+  for standardKey, vorpKey in pairs(REVERT_CLOTHES_KEY_MAP) do
+    reverted[vorpKey] = table.extract(standard, standardKey) or table.extract(standard, vorpKey)
+  end
+  -- Converte as chaves internas do outfit recursivamente (outfits -> Outfits)
+  reverted.Outfits = convertOutfitKeys(reverted.Outfits, REVERT_CLOTHES_KEY_MAP)
   return reverted
 end
 
