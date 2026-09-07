@@ -251,7 +251,16 @@ local function updateComponentWearableState(ped, category, hash, state)
   end
   state = GetHashFromString(state)
   Entity(ped).state:set("wearableState:" .. category, state)
-  UpdateShopItemWearableState(ped, type(hash) == "table" and hash.hash or hash, state)
+  if type(hash) == "table" then
+    hash = hash.hash
+  end
+  -- Sem hash de verdade (ex.: horse_heads/horse_bodies só com palette/drawable, sem item de loja
+  -- pra equipar) não tem "wearable state" nenhum pra setar — sem essa guarda, `hash` chegava aqui
+  -- como a TABELA INTEIRA de dados do componente (o `and hash.hash or hash` antigo devolvia a
+  -- tabela quando hash.hash era nil), estourando a native (66B957AAC2EAAEAB) com "invalid table
+  -- argument" toda vez que um cavalo tinha cor customizada na cabeça/corpo sem hash de item.
+  if not hash or hash == 0 then return end
+  UpdateShopItemWearableState(ped, hash, state)
 end
 
 -------------
