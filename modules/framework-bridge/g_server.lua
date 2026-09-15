@@ -13,7 +13,6 @@ RegisterNetEvent("jo_libs:server:applySkinAndClothes", function(ped, skin, cloth
   if jo.framework:is("vorp") then
     if table.count(jo.framework:getUserIdentifiers(source)) > 0 then return end --will be fired by vorpcharacter:reloadedskinlistener
   end
-
   jo.framework:sendSkinAndClothes(source, ped, skin, clothes)
 end)
 

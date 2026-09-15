@@ -387,6 +387,23 @@ end
 local function clearClothesTable(clothesList)
   if not clothesList then return {} end
   for cat, data in pairs(clothesList) do
+    if cat == "outfits" and type(data) == "table" and not data.drawable and not data.hash then
+      for subCat, subData in pairs(data) do
+        if type(subData) == "table" then
+          local cleaned = formatComponentData(subData)
+          if cleaned then
+            if not cleaned.palette or cleaned.palette == 0 then
+              cleaned.palette = nil
+              cleaned.tint0 = nil
+              cleaned.tint1 = nil
+              cleaned.tint2 = nil
+            end
+            data[subCat] = cleaned
+          end
+        end
+      end
+      goto continue
+    end
     local clothes = formatComponentData(data)
     if clothes and (not clothes.palette or clothes.palette == 0) then
       clothes.palette = nil
@@ -395,6 +412,7 @@ local function clearClothesTable(clothesList)
       clothes.tint2 = nil
     end
     clothesList[cat] = clothes
+    ::continue::
   end
   return clothesList
 end
@@ -424,7 +442,9 @@ function jo.framework:standardizeClothes(clothes)
   end
 
   table.merge(standard, clothes)
+  log(standard)
   clearClothesTable(standard)
+  log(standard)
 
   return standard
 end
@@ -607,7 +627,6 @@ end
 function jo.framework:sendSkinAndClothes(source, ped, skin, clothes)
   skin = self:standardizeSkin(UnJson(skin))
   clothes = self:standardizeClothes(UnJson(clothes))
-
   --the teeth are stored with the clothes by some frameworks, but applied with the skin
   if clothes.teeth then
     skin.teeth = clothes.teeth.hash
