@@ -442,9 +442,7 @@ function jo.framework:standardizeClothes(clothes)
   end
 
   table.merge(standard, clothes)
-  log(standard)
   clearClothesTable(standard)
-  log(standard)
 
   return standard
 end
