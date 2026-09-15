@@ -5,6 +5,11 @@ local RSGCore = exports["rsg-core"]:GetCoreObject()
 
 jo.framework.core = RSGCore
 
+AddEventHandler("RSGCore:Server:UpdateObject", function()
+  RSGCore = exports["rsg-core"]:GetCoreObject()
+  jo.framework.core = RSGCore
+end)
+
 -------------
 -- VARIABLES
 -------------
@@ -347,7 +352,7 @@ end
 
 ---@return number jobGrade
 function jo.framework.UserClass:getJobGrade()
-  return self.data.job.grade.level
+  return self.data.PlayerData.job.grade.level
 end
 
 ---@return boolean result of job and grade assignment

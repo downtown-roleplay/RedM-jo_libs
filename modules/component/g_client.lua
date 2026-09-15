@@ -251,16 +251,10 @@ local function updateComponentWearableState(ped, category, hash, state)
   end
   state = GetHashFromString(state)
   Entity(ped).state:set("wearableState:" .. category, state)
-  if type(hash) == "table" then
-    hash = hash.hash
-  end
-  -- Sem hash de verdade (ex.: horse_heads/horse_bodies só com palette/drawable, sem item de loja
-  -- pra equipar) não tem "wearable state" nenhum pra setar — sem essa guarda, `hash` chegava aqui
-  -- como a TABELA INTEIRA de dados do componente (o `and hash.hash or hash` antigo devolvia a
-  -- tabela quando hash.hash era nil), estourando a native (66B957AAC2EAAEAB) com "invalid table
-  -- argument" toda vez que um cavalo tinha cor customizada na cabeça/corpo sem hash de item.
-  if not hash or hash == 0 then return end
-  UpdateShopItemWearableState(ped, hash, state)
+  local itemHash = hash
+  if type(hash) == "table" then itemHash = hash.hash end
+  if not itemHash then return end
+  UpdateShopItemWearableState(ped, itemHash, state)
 end
 
 -------------
@@ -533,8 +527,8 @@ function jo.component.apply(ped, category, _data)
 
     addCachedComponent(ped, nil, categoryHash, data.hash, data.wearableState, data.drawable, data.albedo, data.normal, data.material, data.palette, data.tint0, data.tint1, data.tint2)
   elseif data.wearableState then
-    local comp = jo.component.getComponentEquiped(ped, categoryHash)
-    updateComponentWearableState(ped, categoryHash, comp, data.wearableState)
+    local compHash = jo.component.getComponentEquiped(ped, categoryHash)
+    updateComponentWearableState(ped, categoryHash, compHash, data.wearableState)
   else
     RemoveTagFromMetaPed(ped, categoryHash, 0)
     if categoryHash == `neckwear` then
@@ -575,28 +569,6 @@ function jo.component.applyComponents(ped, components)
   if not components then return end
 
   jo.component.removeAllClothes(ped)
-
-  -- Outfit completo equipado (categoria "outfits"): a tabela do outfit e plana
-  -- { categoria = hash, ... }, diferente de um componente unico { hash = ... }.
-  -- O outfit e EXCLUSIVO: quando presente, as pecas individuais dos slots nao
-  -- sao aplicadas (aplica so o outfit e retorna).
-  local outfit = components.outfits
-  if type(outfit) == "table" and next(outfit) then
-    for subCat, subData in pairs(outfit) do
-      if subCat ~= "outfits" then
-        jo.component.apply(ped, subCat, subData)
-      end
-    end
-    jo.component.waitPedLoaded(ped)
-
-    -- Peça full-body do outfit, se existir
-    if type(outfit.outfits) == "table" and (outfit.outfits.drawable or outfit.outfits.hash) then
-      jo.component.apply(ped, "outfits", outfit.outfits)
-    end
-
-    jo.component.refreshPed(ped)
-    return
-  end
 
   for i = 1, #jo.component.data.pedClothes do
     local category = jo.component.data.pedClothes[i]
@@ -794,8 +766,8 @@ function jo.component.setWearableState(ped, category, data, state)
 
   if categoryHash == `neckwear` then
     if stateHash == `base` then
-      local beardHard, beard = jo.component.getComponentEquiped(ped, "beards_complete")
-      if beardHard then
+      local beardHash, beard = jo.component.getComponentEquiped(ped, "beards_complete")
+      if beardHash then
         jo.component.apply(ped, beard.category, beard)
       end
     elseif stateHash == `mask_up` then

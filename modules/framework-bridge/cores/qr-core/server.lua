@@ -5,6 +5,11 @@ local QRCore = exports["qr-core"]:GetCoreObject()
 
 jo.framework.core = QRCore
 
+AddEventHandler("QRCore:Server:UpdateObject", function()
+  QRCore = exports["qr-core"]:GetCoreObject()
+  jo.framework.core = QRCore
+end)
+
 -------------
 -- USER CLASS
 -------------
@@ -81,7 +86,7 @@ end
 
 ---@return number jobGrade
 function jo.framework.UserClass:getJobGrade()
-  return self.data.job.grade.level
+  return self.data.PlayerData.job.grade.level
 end
 
 ---@return boolean result of job and grade assignment

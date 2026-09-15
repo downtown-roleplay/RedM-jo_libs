@@ -8,13 +8,13 @@
 ---@param meta table metadata of the item
 ---@param remove boolean if removed after used
 function jo.framework:canUseItem(source, item, amount, meta, remove)
-  local count = exports.inventory:GetItem(source, item, meta, true)
+  local count = exports.ox_inventory:GetItem(source, item, meta, true)
   if not count then
     count = 0
   end
   if count >= amount then
     if remove then
-      local res = exports.inventory:RemoveItem(source, item, amount, meta)
+      local res = exports.ox_inventory:RemoveItem(source, item, amount, meta)
       return res
     end
   end
@@ -26,14 +26,14 @@ end
 ---@param closeAfterUsed boolean if inventory needs to be closes
 ---@return boolean
 function jo.framework:registerUseItem(item, closeAfterUsed, callback)
-    exports.core:GetCoreObject().RegisterUsableItem(item, function(source, item)
-    local character = exports.core:GetCoreObject().GetCharacterFromPlayerId(source)
-    if character then
+  if type(closeAfterUsed) == "function" then
+    callback = closeAfterUsed
+    closeAfterUsed = true
+  end
+  exports.ox_inventory:CreateUseableItem(item, function(source, data)
+    callback(source, { metadata = data.metadata })
     if closeAfterUsed then
-      character.triggerEvent('ox_inventory:closeInventory')
-      end
-
-      callback(source, item)
+      TriggerClientEvent("ox_inventory:closeInventory", source)
     end
   end)
 end
@@ -44,8 +44,8 @@ end
 ---@param meta table metadata of the item
 ---@return boolean
 function jo.framework:giveItem(source, item, quantity, meta)
-  if exports.inventory:CanCarryItem(source, item, quantity, meta) then
-    local res = exports.inventory:AddItem(source, item, quantity, meta)
+  if exports.ox_inventory:CanCarryItem(source, item, quantity, meta) then
+    local res = exports.ox_inventory:AddItem(source, item, quantity, meta)
     return res
   end
   return false
@@ -63,14 +63,14 @@ function jo.framework:createInventory(invName, name, invConfig)
     maxWeight = invConfig.maxWeight * 1000,
   }
   inventories[invName] = inventoryConfig
-  exports.inventory:RegisterStash(inventoryConfig.id, inventoryConfig.name, inventoryConfig.slots, inventoryConfig.maxWeight)
+  exports.ox_inventory:RegisterStash(inventoryConfig.id, inventoryConfig.name, inventoryConfig.slots, inventoryConfig.maxWeight)
   return true
 end
 
 ---@param invName string unique ID of the inventory
 ---@return boolean
 function jo.framework:removeInventory(invName)
-  return exports.inventory:RemoveInventory(invName)
+  return exports.ox_inventory:RemoveInventory(invName)
 end
 
 ---@param source integer sourceIdentifier
@@ -88,13 +88,13 @@ end
 ---@param needWait? boolean wait after the adding
 ---@return boolean
 function jo.framework:addItemInInventory(source, invId, item, quantity, metadata, needWait)
-  return exports.inventory:AddItem(invId, item, quantity, metadata)
+  return exports.ox_inventory:AddItem(invId, item, quantity, metadata)
 end
 
 ---@param invId string name of the inventory
 ---@return table
 function jo.framework:getItemsFromInventory(invId)
-  return exports.inventory:GetInventoryItems(invId)
+  return exports.ox_inventory:GetInventoryItems(invId)
 end
 
 -------------
