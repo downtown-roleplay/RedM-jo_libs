@@ -623,7 +623,20 @@ end
 ---@param skin table (The skin data, in framework format)
 ---@param clothes table (The clothes data, in framework format)
 function jo.framework:sendSkinAndClothes(source, ped, skin, clothes)
-  skin = self:standardizeSkin(UnJson(skin))
+  skin = UnJson(skin)
+  if jo.debugModules["framework-bridge"] then
+    -- standardizeSkin apaga as chaves ao converter: logar o skin bruto antes.
+    local raw = {}
+    for key, value in pairs(skin) do
+      if type(key) == "string" and (key:find("_visibility$") or key:find("_tx_id$") or key:find("_opacity$")
+            or key:find("_color") or key:find("_palette_id$")) then
+        raw[key] = value
+      end
+    end
+    dprint("[overlay-debug] RAW skin overlay keys source:", source, json.encode(raw))
+  end
+  skin = self:standardizeSkin(skin)
+  dprint("[overlay-debug] sendSkinAndClothes source:", source, "overlays:", json.encode(skin.overlays or {}))
   clothes = self:standardizeClothes(UnJson(clothes))
   --the teeth are stored with the clothes by some frameworks, but applied with the skin
   if clothes.teeth then
