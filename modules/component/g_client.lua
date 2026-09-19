@@ -618,6 +618,51 @@ function jo.component.applyComponents(ped, components)
   end
 end
 
+-- Overlays (maquiagem, cicatrizes, sobrancelha...) são texturas compostas de forma assíncrona sobre o
+-- componente "heads". Aplicadas no meio do login, dependem de timing/VRAM da máquina e podem se perder.
+-- Para o ped do jogador, espera o fim da sequência de login (LocalPlayer.state.characterLoad, o mesmo
+-- gate que dt-arrival/dt-interact usam) antes de compor a textura.
+local OVERLAY_LOGIN_TIMEOUT_MS = 45000
+local OVERLAY_LOGIN_POLL_MS = 250
+local OVERLAY_SETTLE_MS = 500
+local overlayGeneration = {}
+
+local function applyOverlaysWhenReady(ped, overlays)
+  if not (jo.isModuleLoaded("pedTexture", false) and NetworkGetEntityIsNetworked(ped)) then
+    return dprint("[overlay-debug] overlays SKIPPED (module not loaded or ped not networked)", ped)
+  end
+
+  -- Uma chamada nova para o mesmo ped cancela a espera da anterior.
+  local generation = (overlayGeneration[ped] or 0) + 1
+  overlayGeneration[ped] = generation
+
+  local function isStale()
+    return overlayGeneration[ped] ~= generation or not DoesEntityExist(ped)
+  end
+
+  CreateThread(function()
+    local isPlayer = ped == PlayerPedId()
+    local waited = 0
+    while isPlayer and not LocalPlayer.state.characterLoad do
+      if waited >= OVERLAY_LOGIN_TIMEOUT_MS then
+        eprint(("overlays: characterLoad não ficou true em %dms, aplicando mesmo assim"):format(waited))
+        break
+      end
+      Wait(OVERLAY_LOGIN_POLL_MS)
+      waited = waited + OVERLAY_LOGIN_POLL_MS
+      if isStale() then return end
+    end
+    dprint("[overlay-debug] overlays liberados após", waited, "ms de espera do login")
+
+    Wait(OVERLAY_SETTLE_MS)
+    if isStale() then return end
+    jo.waiter.exec(function() return IsPedReadyToRender(ped) end)
+    if isStale() then return end
+
+    jo.pedTexture.overwriteBodyPart(ped, "heads", overlays, true)
+  end)
+end
+
 -- todo verify if the skin table is OK
 --- A function to apply a complete skin configuration to a ped
 ---@param ped integer (The entity ID)
@@ -748,9 +793,15 @@ function jo.component.applySkin(ped, skin)
       overlay = table.merge(default, overlay)
     end
   end
-  if jo.isModuleLoaded("pedTexture", false) and NetworkGetEntityIsNetworked(ped) then
-    jo.pedTexture.overwriteBodyPart(ped, "heads", skin.overlays, true)
-  end
+  local overlayNames = {}
+  for name in pairs(skin.overlays or {}) do overlayNames[#overlayNames + 1] = name end
+  dprint("[overlay-debug] applySkin ped:", ped,
+    "moduleLoaded:", jo.isModuleLoaded("pedTexture", false),
+    "networked:", NetworkGetEntityIsNetworked(ped),
+    "screenFadedOut:", IsScreenFadedOut(),
+    "loadingScreen:", IsLoadingScreenVisible(),
+    "overlays:", table.concat(overlayNames, ","))
+  applyOverlaysWhenReady(ped, skin.overlays)
 
   Wait(100)
 

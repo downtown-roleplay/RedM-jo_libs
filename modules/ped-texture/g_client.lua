@@ -9,6 +9,10 @@ local pedsTextures = {}
 local delays = {}
 local maxForceUpdate = 5
 local currentUpdate = 0
+-- Quando as tentativas imediatas se esgotam (textura inválida/VRAM, ped não pronto), tenta de novo depois.
+local maxLaterRetries = 3
+local laterRetryDelay = 3000
+local laterRetries = {}
 
 local function AddTextureLayer(...) return InvokeNative(0x86BB5FF45F193A02, ...) end
 local function ApplyTextureOnPed(...) return InvokeNative(0x0B46E25761519058, ...) end
@@ -434,6 +438,22 @@ local function updateAllPedTexture(ped, category)
   end
   delays["updatePedTexture" .. ped] = jo.timeout.delay("updatePedTexture" .. ped, 200, function()
     dprint("updateAllPedTexture(), try number:", currentUpdate, json.encode(pedsTextures[ped]))
+
+    -- As tentativas imediatas acabaram: loga sempre (eprint) e reagenda em vez de abandonar em silêncio.
+    local function retryLater(reason)
+      eprint(("Ped texture (ped %s, %s) não aplicada: %s"):format(ped, category, reason))
+      laterRetries[ped] = (laterRetries[ped] or 0) + 1
+      if laterRetries[ped] > maxLaterRetries then
+        return eprint(("Ped texture (ped %s): desistindo após %d novas tentativas"):format(ped, maxLaterRetries))
+      end
+      CreateThread(function()
+        Wait(laterRetryDelay)
+        if not DoesEntityExist(ped) or not (pedsTextures[ped] and pedsTextures[ped][category]) then return end
+        currentUpdate = 1
+        updateAllPedTexture(ped, category)
+      end)
+    end
+
     GetNumberOfMicrosecondsSinceLastCall()
     dprint("Wait ped ready")
     jo.waiter.exec(function()
@@ -446,9 +466,11 @@ local function updateAllPedTexture(ped, category)
     end
     local index = GetComponentIndexByCategory(ped, category)
     local _, albedo, normal, material = GetMetaPedAssetGuids(ped, index)
+    dprint("[overlay-debug] compose start ped:", ped, "category:", category, "componentIndex:", index,
+      "albedo:", albedo, "layers:", table.count(pedsTextures[ped][category].layers or {}))
     if albedo == 0 then
       dprint("Impossible to get the ped albedo")
-      return
+      return retryLater("albedo do componente indisponível")
     end
     local textureId = RequestTexture(albedo, normal, material)
 
@@ -457,7 +479,7 @@ local function updateAllPedTexture(ped, category)
       currentUpdate += 1
       if currentUpdate > maxForceUpdate then
         dprint("Impossible to apply the ped Texture. Max try attempts", currentUpdate)
-        return
+        return retryLater("textura inválida")
       end
       Wait(200)
       dprint("Restart the updateAllPedTexture() function")
@@ -487,7 +509,7 @@ local function updateAllPedTexture(ped, category)
       currentUpdate += 1
       if currentUpdate > maxForceUpdate then
         dprint("Impossible to apply the ped Texture. Max try attempts", currentUpdate)
-        return
+        return retryLater("textura ficou inválida após aplicar as layers")
       end
       Wait(200)
       dprint("Restart the updateAllPedTexture() function")
@@ -499,6 +521,22 @@ local function updateAllPedTexture(ped, category)
     UpdatePedTexture(textureId)
     _updatePedVariation(ped)
     Entity(ped).state:set("jo_pedTexture", pedsTextures[ped])
+    laterRetries[ped] = nil
+    if jo.debugModules["ped-texture"] then
+      -- Se o albedo do componente mudar depois do apply, algo trocou o "heads" e apagou o overlay.
+      local appliedIndex, appliedAlbedo = index, albedo
+      CreateThread(function()
+        for _, delay in ipairs({ 500, 1500, 4000 }) do
+          Wait(delay)
+          if not DoesEntityExist(ped) then return end
+          local idx = GetComponentIndexByCategory(ped, category)
+          local _, currentAlbedo = GetMetaPedAssetGuids(ped, idx)
+          dprint(("[overlay-debug] +%dms heads index %s->%s albedo %s->%s %s"):format(
+            delay, tostring(appliedIndex), tostring(idx), tostring(appliedAlbedo), tostring(currentAlbedo),
+            currentAlbedo ~= appliedAlbedo and "<< COMPONENTE TROCADO" or "ok"))
+        end
+      end)
+    end
     CreateThread(function()
       local textureId = textureId
       jo.waiter.exec(function() return IsPedReadyToRender(ped) end)
