@@ -69,6 +69,15 @@ local function menuNUIChange(data)
 
   currentData.menu = data.menu
   if data.index then
+    -- A NUI reporta o index em hover/preview de forma assincrona; se o Lua
+    -- acabou de reconstruir cur.items (ex: onEnter com lib.callback.await
+    -- no meio, comum em menus com dados do servidor) exatamente entre o
+    -- hover antigo e esse evento chegar, data.index pode nao existir mais
+    -- na lista nova -> table.merge(nil, data.item) indexava nil e derrubava
+    -- o menu inteiro. Ignorar esse evento obsoleto: o proximo updatePreview
+    -- (ja com o index certo pos-render) chega logo em seguida.
+    if not menus[data.menu].items[data.index] then return end
+
     menus[data.menu].currentIndex = data.index
     menus[data.menu].items[data.index] = table.merge(menus[data.menu].items[data.index], data.item)
     currentData.item = menus[data.menu].items[data.index]
