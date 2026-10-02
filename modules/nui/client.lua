@@ -1,5 +1,6 @@
 jo.createModule("nui")
 local nuiLoaded = {}
+local nuiRequested = {}
 
 --- Loads a NUI interface
 ---@param uiName string (The name of the NUI to load)
@@ -11,12 +12,33 @@ function jo.nui.load(uiName, url)
   if (url:sub(1, 1) == "@") then url = url:sub(2) end
   if (not url:find("://")) then url = "nui://" .. url end
   if nuiLoaded[uiName] then return eprint("This nui is already loaded:", uiName) end
+  if nuiRequested[uiName] then return end
+  nuiRequested[uiName] = true
 
   SendNUIMessage({
     action = "jo_nui_loadNUI",
     url = url,
     uiName = uiName,
   })
+end
+
+function jo.nui.unload(uiName)
+  if not nuiRequested[uiName] then return end
+  nuiRequested[uiName] = nil
+  nuiLoaded[uiName] = nil
+
+  SendNUIMessage({
+    action = "jo_nui_unloadNUI",
+    uiName = uiName,
+  })
+end
+
+function jo.nui.waitLoaded(uiName, timeout)
+  local deadline = GetGameTimer() + (timeout or 10000)
+  while nuiRequested[uiName] and not nuiLoaded[uiName] and GetGameTimer() < deadline do
+    Wait(0)
+  end
+  return nuiLoaded[uiName] and true or false
 end
 
 --- Forces focus on a specific NUI interface and don't spread events to other NUIs
@@ -62,7 +84,7 @@ RegisterNUICallback("jo_nui_is_hovering", function(data, cb)
 end)
 
 RegisterNuiCallback('jo_nui_loaded', function(data, cb)
-  if data and data.uiName then
+  if data and data.uiName and nuiRequested[data.uiName] then
     nuiLoaded[data.uiName] = true
   end
   cb("ok")

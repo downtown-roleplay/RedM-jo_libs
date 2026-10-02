@@ -3,19 +3,19 @@ jo.require("timeout")
 jo.require("nui")
 jo.require("string")
 
+local directPage = GetResourceMetadata(GetCurrentResourceName(), "ui_page") == "nui://jo_libs/nui/menu/index.html"
 local nuiLoaded = false
+local nuiLoading = false
+local nuiLang = nil
+local nuiVolume = nil
 local menuNuiChangeInProgress = false
 
-CreateThread(function()
-  Wait(100)
-  if GetResourceMetadata(GetCurrentResourceName(), "ui_page") == "nui://jo_libs/nui/menu/index.html" then
+if directPage then
+  CreateThread(function()
+    Wait(100)
     nuiLoaded = true
-    return
-  end
-  jo.nui.load("jo_menu", "nui://jo_libs/nui/menu/index.html")
-  Wait(500)
-  nuiLoaded = true
-end)
+  end)
+end
 
 local menus = {}
 local menuCreators = {}
@@ -29,11 +29,40 @@ local previousData = {}
 local previousKeepingInput = false
 local NativeSendNUIMessage = SendNUIMessage
 local function SendNUIMessage(data)
-  while not nuiLoaded do
-    Wait(0)
+  if not nuiLoaded then
+    if not directPage then return end
+    while not nuiLoaded do
+      Wait(0)
+    end
   end
   data.messageTargetUiName = "jo_menu"
   NativeSendNUIMessage(data)
+end
+
+local function ensureNUI()
+  if nuiLoaded or directPage then return end
+  if nuiLoading then
+    while nuiLoading do Wait(0) end
+    return
+  end
+  nuiLoading = true
+  jo.nui.load("jo_menu", "nui://jo_libs/nui/menu/index.html")
+  jo.nui.waitLoaded("jo_menu")
+  Wait(500)
+  nuiLoaded = true
+  nuiLoading = false
+  if nuiLang then
+    SendNUIMessage({ event = "updateLang", lang = nuiLang })
+  end
+  if nuiVolume then
+    SendNUIMessage({ event = "updateVolume", volume = nuiVolume })
+  end
+  for _, menu in pairs(menus) do
+    if menu.pendingSend then
+      menu.pendingSend = nil
+      menu:send()
+    end
+  end
 end
 local disabledKeys = {
   `INPUT_SELECT_NEXT_WEAPON`,
@@ -539,6 +568,10 @@ function jo.menu.sort(id, first, last) menus[id]:sort(first, last) end
 
 --- Send the menu data to the NUI layer
 function MenuClass:send()
+  if not nuiLoaded and not directPage then
+    self.pendingSend = true
+    return
+  end
   if self.sentToNUI then
     self:refresh()
     return
@@ -670,6 +703,7 @@ function jo.menu.setCurrentMenu(id, keepHistoric, resetMenu)
     previousData = {}
   end
 
+  ensureNUI()
   SendNUIMessage({
     event = "setCurrentMenu",
     menu = id,
@@ -731,6 +765,7 @@ function jo.menu.show(show, keepInput, hideRadar, playMenuAnimation, hideCursor)
         SendNUIMessage({ event = "updateShow", show = show, cancelAnimation = not playMenuAnimation })
       end)
     else
+      ensureNUI()
       previousKeepingInput = IsNuiFocusKeepingInput()
       SetNuiFocus(true, not hideCursor)
       SetNuiFocusKeepInput(keepInput)
@@ -761,6 +796,7 @@ end)
 --- lang.free? string (The "Free" text <br> default : `"Free"`)
 --- lang.variation? string (The variatio, text <br> default : `"Variation"`)
 function jo.menu.updateLang(lang)
+  nuiLang = lang
   SendNUIMessage({
     event = "updateLang",
     lang = lang
@@ -770,6 +806,7 @@ end
 --- Set the volume level for menu sound effects
 ---@param volume number (Volume of sound effects 0.0 to 1.0)
 function jo.menu.updateVolume(volume)
+  nuiVolume = volume
   SendNUIMessage({
     event = "updateVolume",
     volume = volume

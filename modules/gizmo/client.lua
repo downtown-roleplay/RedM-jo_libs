@@ -3,19 +3,19 @@ jo.createModule("gizmo")
 jo.require("nui")
 jo.require("prompt")
 
-CreateThread(function()
-    dprint("[GIZMO DEBUG] NUI loading thread started at:", GetGameTimer())
-    Wait(100)
-    local uiPage = GetResourceMetadata(GetCurrentResourceName(), "ui_page")
-    dprint("[GIZMO DEBUG] Resource UI page:", uiPage)
-    if uiPage == "nui://jo_libs/nui/gizmo/index.html" then
-        dprint("[GIZMO DEBUG] UI page already set, skipping load")
-        return
-    end
-    dprint("[GIZMO DEBUG] Loading NUI: jo_gizmo at nui://jo_libs/nui/gizmo/index.html")
+local directPage = GetResourceMetadata(GetCurrentResourceName(), "ui_page") == "nui://jo_libs/nui/gizmo/index.html"
+
+local function loadNUI()
+    if directPage then return end
     jo.nui.load("jo_gizmo", "nui://jo_libs/nui/gizmo/index.html")
-    dprint("[GIZMO DEBUG] NUI load command completed")
-end)
+    jo.nui.waitLoaded("jo_gizmo")
+end
+
+local function unloadNUI()
+    if directPage then return end
+    jo.nui.unload("jo_gizmo")
+end
+
 local NativeSendNUIMessage = SendNUIMessage
 local clockStart = nil
 local function SendNUIMessage(data)
@@ -418,6 +418,7 @@ function jo.gizmo.moveEntity(entity, cfg, allowPlace)
     hookedFunc = allowPlace
 
     responseData = {}
+    loadNUI()
     showNUI(true)
     DisplayHud(false)
     dprint("[GIZMO DEBUG] HUD disabled, waiting 500ms before sending initial message")
@@ -610,6 +611,7 @@ function jo.gizmo.moveEntity(entity, cfg, allowPlace)
     dprint("[GIZMO DEBUG] Exited main loop, cleaning up prompts")
     jo.prompt.deleteGroup(groupName)
     DisplayHud(true)
+    unloadNUI()
     dprint("[GIZMO DEBUG] Cleanup complete, returning response data:", json.encode(responseData))
 
     return responseData

@@ -225,6 +225,14 @@
           element: frame
         })
         break;
+      case "jo_nui_unloadNUI":
+        const unloadIndex = iFrames.findIndex((e) => e.uiName == data.uiName)
+        if (unloadIndex === -1) return
+        const unloaded = iFrames[unloadIndex]
+        iFrames.splice(unloadIndex, 1)
+        if (uiNameFocused == data.uiName) uiNameFocused = ""
+        unloaded.element.remove()
+        break;
       case "jo_nui_force_focus":
         uiNameFocused = data.uiName
         iFrames.forEach((frame, index) => {

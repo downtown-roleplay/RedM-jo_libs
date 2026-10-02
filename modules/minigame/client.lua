@@ -7,7 +7,9 @@ jo.require("nui")
 -- * ====================================
 
 local NativeSendNUIMessage = SendNUIMessage
+local directPage = GetResourceMetadata(GetCurrentResourceName(), "ui_page") == "nui://jo_libs/nui/minigame/index.html"
 local nuiLoaded = false
+local nuiLoading = false
 local currentGamePromise = nil
 local currentGame = nil
 local currentGameConfig = nil
@@ -20,14 +22,26 @@ local defaultAnimPostFx = "PauseMenuIn"
 -- * NUI LOADING
 -- * ====================================
 
-CreateThread(function()
-    Wait(100)
-    if GetResourceMetadata(GetCurrentResourceName(), "ui_page") ~= "nui://jo_libs/nui/minigame/index.html" then
-        jo.nui.load("jo_minigame", "nui://jo_libs/nui/minigame/index.html")
-        Wait(1000)
+if directPage then
+    CreateThread(function()
+        Wait(100)
+        nuiLoaded = true
+    end)
+end
+
+local function ensureNUI()
+    if nuiLoaded or directPage then return end
+    if nuiLoading then
+        while nuiLoading do Wait(0) end
+        return
     end
+    nuiLoading = true
+    jo.nui.load("jo_minigame", "nui://jo_libs/nui/minigame/index.html")
+    jo.nui.waitLoaded("jo_minigame")
+    Wait(1000)
     nuiLoaded = true
-end)
+    nuiLoading = false
+end
 
 -- * ====================================
 -- * DEFAULT CONFIG
@@ -103,6 +117,7 @@ local function startMinigame(game, config)
     currentGameConfig = mergedConfig
     local nuiConfig = table.clearForNui(mergedConfig)
 
+    ensureNUI()
     SendNUIMessage({
         type = "jo_minigame:show",
         data = {
