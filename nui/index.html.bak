@@ -225,15 +225,6 @@
           element: frame
         })
         break;
-      case "jo_nui_unloadNUI": {
-        const index = iFrames.findIndex((e) => e.uiName == data.uiName)
-        if (index === -1) break
-        // removing the iframe destroys its browsing context (and any WebGL context inside)
-        iFrames[index].element.remove()
-        iFrames.splice(index, 1)
-        if (uiNameFocused == data.uiName) uiNameFocused = ""
-        break;
-      }
       case "jo_nui_force_focus":
         uiNameFocused = data.uiName
         iFrames.forEach((frame, index) => {

@@ -3,28 +3,19 @@ jo.createModule("gizmo")
 jo.require("nui")
 jo.require("prompt")
 
--- The gizmo NUI is a fullscreen three.js/WebGL canvas that renders every frame and holds
--- hundreds of MB of VRAM while loaded. It used to be loaded at resource start for every
--- player; now it's loaded on demand in moveEntity and unloaded as soon as it closes.
-local gizmoIsMainUiPage = GetResourceMetadata(GetCurrentResourceName(), "ui_page") == "nui://jo_libs/nui/gizmo/index.html"
-
-local function loadGizmoNUI()
-    if gizmoIsMainUiPage or jo.nui.isLoaded("jo_gizmo") then return end
-    dprint("[GIZMO DEBUG] Loading NUI on demand: jo_gizmo")
-    jo.nui.load("jo_gizmo", "nui://jo_libs/nui/gizmo/index.html")
-    local timeout = GetGameTimer() + 5000
-    while not jo.nui.isLoaded("jo_gizmo") and GetGameTimer() < timeout do
-        Wait(50)
+CreateThread(function()
+    dprint("[GIZMO DEBUG] NUI loading thread started at:", GetGameTimer())
+    Wait(100)
+    local uiPage = GetResourceMetadata(GetCurrentResourceName(), "ui_page")
+    dprint("[GIZMO DEBUG] Resource UI page:", uiPage)
+    if uiPage == "nui://jo_libs/nui/gizmo/index.html" then
+        dprint("[GIZMO DEBUG] UI page already set, skipping load")
+        return
     end
-    -- let the React app mount and register its message listener
-    Wait(300)
-end
-
-local function unloadGizmoNUI()
-    if gizmoIsMainUiPage then return end
-    dprint("[GIZMO DEBUG] Unloading NUI: jo_gizmo")
-    jo.nui.unload("jo_gizmo")
-end
+    dprint("[GIZMO DEBUG] Loading NUI: jo_gizmo at nui://jo_libs/nui/gizmo/index.html")
+    jo.nui.load("jo_gizmo", "nui://jo_libs/nui/gizmo/index.html")
+    dprint("[GIZMO DEBUG] NUI load command completed")
+end)
 local NativeSendNUIMessage = SendNUIMessage
 local clockStart = nil
 local function SendNUIMessage(data)
@@ -393,8 +384,6 @@ function jo.gizmo.moveEntity(entity, cfg, allowPlace)
         return
     end
 
-    loadGizmoNUI()
-
     if gizmoActive then
         dprint("[GIZMO DEBUG] WARNING: gizmoActive was true, showing NUI false")
         showNUI(false)
@@ -621,7 +610,6 @@ function jo.gizmo.moveEntity(entity, cfg, allowPlace)
     dprint("[GIZMO DEBUG] Exited main loop, cleaning up prompts")
     jo.prompt.deleteGroup(groupName)
     DisplayHud(true)
-    unloadGizmoNUI()
     dprint("[GIZMO DEBUG] Cleanup complete, returning response data:", json.encode(responseData))
 
     return responseData

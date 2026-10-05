@@ -19,16 +19,6 @@ function jo.nui.load(uiName, url)
   })
 end
 
---- Unloads a NUI interface (removes its iframe and frees its memory/VRAM)
----@param uiName string (The name of the NUI to unload)
-function jo.nui.unload(uiName)
-  nuiLoaded[uiName] = nil
-  SendNUIMessage({
-    action = "jo_nui_unloadNUI",
-    uiName = uiName,
-  })
-end
-
 --- Forces focus on a specific NUI interface and don't spread events to other NUIs
 ---@param uiName string (The name of the NUI to focus on)
 function jo.nui.forceFocus(uiName)
