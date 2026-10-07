@@ -214,8 +214,19 @@ local function showNUI(bool)
     end
 
     gizmoActive = bool
+    -- Os prompts do gizmo são soltos (grupo "interaction"); qualquer
+    -- PromptSetActiveGroupThisFrame de outro resource toma o lugar deles. Quem
+    -- desenha grupo de prompt checa esta flag (local, não replica) e pula o frame.
+    LocalPlayer.state:set('gizmoActive', bool, false)
     dprint("[GIZMO DEBUG] showNUI complete, gizmoActive:", gizmoActive)
 end
+
+-- Resource parado no meio do gizmo deixaria a flag presa e os prompts sumidos
+AddEventHandler('onResourceStop', function(resourceName)
+    if resourceName == GetCurrentResourceName() and gizmoActive then
+        LocalPlayer.state:set('gizmoActive', false, false)
+    end
+end)
 
 -- Disables controls, Radar, and Player Firing
 local function disableControls()

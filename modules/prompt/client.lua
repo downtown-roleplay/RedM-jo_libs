@@ -20,6 +20,7 @@ local function UiPromptGetProgress(...) return InvokeNative(0x81801291806DBC50, 
 function jo.prompt.displayGroup(group, title)
   if not group then return end
   if not jo.prompt.isGroupExist(group) then return end
+  if LocalPlayer.state.gizmoActive then return end -- não cobre os prompts do gizmo (modules/gizmo)
   local promptName = CreateVarString(10, "LITERAL_STRING", title)
   PromptSetActiveGroupThisFrame(promptGroups[group].group, promptName, promptGroups[group].nbrPage, 0)
 end
