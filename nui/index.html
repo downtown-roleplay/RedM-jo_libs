@@ -125,6 +125,21 @@
 
     
     frame.addEventListener('load', () => {
+       // Downtown patch (CEF v144) — ver docs/patches/jo_libs-nui-parent-resource-name.md
+       // A reatribuição original (logo depois do appendChild) acontece na janela
+       // about:blank do iframe. Se o CEF troca essa janela na navegação para a NUI do
+       // resource, a página filha fica sem GetParentResourceName e TODO callback dela
+       // (fetch https://<resource>/<ui>:*) morre em silêncio. Aqui a função é garantida na
+       // janela definitiva — e só se estiver ausente: definição da própria página filha
+       // nunca é sobrescrita.
+       try {
+         if (typeof frame.contentWindow.GetParentResourceName !== 'function') {
+           frame.contentWindow.GetParentResourceName = function () {
+             return resourceName;
+           }
+         }
+       } catch (_error) { }
+
        fetch(`https://${resourceName}/jo_nui_loaded`, {
             method: 'POST',
             headers: {
