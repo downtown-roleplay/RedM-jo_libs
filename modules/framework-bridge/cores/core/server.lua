@@ -1321,7 +1321,15 @@ function jo.framework.UserClass:removeMoney(amount, moneyType)
   local character = Core.GetCharacterFromPlayerId(self.source)
   local user = Core.GetUserFromPlayerId(self.source)
   if moneyType == 0 then
-    return character.removeMoney(amount) and true or false
+    local removed = character.removeMoney(amount) and true or false
+    -- gasto no estábulo/lojas jo vai pros cofres públicos (allowlist em Config.PublicFundsResources do core).
+    -- jo.framework.skipPublicFunds: quem já repassa o valor pra outro cofre (ex.: venda do haras) liga em volta da cobrança.
+    if removed and not jo.framework.skipPublicFunds then
+      local cents = math.floor(tonumber(amount) * 100 + 0.5)
+      local resource = GetCurrentResourceName()
+      CreateThread(function() Core.AddPublicFunds(cents, resource) end)
+    end
+    return removed
   elseif moneyType == 1 then
     return user.removeGold(amount) and true or false
   end
