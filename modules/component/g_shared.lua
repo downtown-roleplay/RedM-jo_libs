@@ -372,6 +372,7 @@ jo.component.data.expressions = {
   arms = 46032,
   chest = 27779,
   hip = 49787,
+  buttHips = 8991, -- DT patch: "ButtHipsS" (bumbum, feminino); reapply after jo_libs update
   neckDepth = 60890,
   neckWidth = 36277,
   shoulderBlades = 18046,
