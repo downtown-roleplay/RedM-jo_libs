@@ -604,6 +604,10 @@ end
 function jo.framework:getUserSkin(source)
   local skin = self:getUserSkinInternal(source)
 
+  -- DT: sem personagem carregado / sem aparência no banco, o standardize chama
+  -- getHeadFromSkinTone(nil) → PlayerPedId() no servidor e estoura
+  if table.isEmpty(skin) then return {} end
+
   local skinStandardized = self:standardizeSkin(skin)
 
   if not skinStandardized.teethHash and not skinStandardized.teethIndex then

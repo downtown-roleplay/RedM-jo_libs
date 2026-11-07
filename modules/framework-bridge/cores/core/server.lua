@@ -1209,8 +1209,23 @@ function jo.framework:getUserSkinInternal(source)
   if not skin then return {} end
 
   local decoded = UnJson(skin)
+  if type(decoded) ~= "table" then return {} end
 
-  return type(decoded) == "table" and decoded or {}
+  -- DT: skin sem "sex" faz o standardize chamar PlayerPedId() no servidor.
+  -- Tira o sexo do modelo real do ped (OneSync) em vez de chutar.
+  if not decoded.sex then
+    local ped = GetPlayerPed(source)
+    local model = ped ~= 0 and GetEntityModel(ped) or 0
+    if model == joaat("mp_female") then
+      decoded.sex = "mp_female"
+    elseif model == joaat("mp_male") then
+      decoded.sex = "mp_male"
+    else
+      decoded.sex = character.sex == "female" and "mp_female" or "mp_male"
+    end
+  end
+
+  return decoded
 end
 
 function jo.framework:updateUserSkinInternal(source, skin, overwrite)
